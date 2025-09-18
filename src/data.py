@@ -96,45 +96,34 @@ def construct_tokenized_dataset(dataset, tokenizer, max_length, model_name):
     return tokenized_sentences
 
 def prepare_dataset(dataset_dir, tokenizer, max_len, model_name):
-    #"""학습(train)과 평가(test)를 위한 데이터셋을 준비"""
     """학습(train)과 검증(validation)을 위한 데이터셋을 준비"""
     # load_data
     train_df = load_data(os.path.join(dataset_dir, "train.csv"))
     valid_df = load_data(os.path.join(dataset_dir, "dev.csv"))
-    # test_df = load_data(os.path.join(dataset_dir, "test.csv"))
     print("--- data loading Done ---")
 
     # 학습 및 검증 데이터에 대해서만 정제(행 삭제) 수행
     train_df = clean_data(train_df)
     valid_df = clean_data(valid_df)
-    # test_df = clean_data(test_df)
     
     # 비식별화 토큰을 special token으로 추가
     special_tokens = ["&location&", "&affiliation&", "&name&", "&company&", "&brand&", 
                       "&art&", "&online-account&", "&address&", "&tel-num&", "&other&"]
     tokenizer.add_special_tokens({"additional_special_tokens": special_tokens})
-    # 추가된 토큰 확인
     print("추가된 스페셜 토큰:", tokenizer.special_tokens_map)
     
     # split label
     train_label = train_df["output"].values
     valid_label = valid_df["output"].values
-    # test_label = test_df["output"].values
-    # test_df는 정제하지 않고 원본을 사용 (추론 시에는 inference.py에서 별도 처리)
-   
 
     # tokenizing dataset
     tokenized_train = construct_tokenized_dataset(train_df, tokenizer, max_len, model_name)
     tokenized_valid = construct_tokenized_dataset(valid_df, tokenizer, max_len, model_name)
-    # 여기서는 원본 test_df를 토크나이징하지만, 실제 inference.py에서는 이 결과를 사용하지 않습니다.
-    # tokenized_test = construct_tokenized_dataset(test_df, tokenizer, max_len, model_name)
     print("--- data tokenizing Done ---")
 
     # make dataset for pytorch.
     hate_train_dataset = hate_dataset(tokenized_train, train_label)
     hate_valid_dataset = hate_dataset(tokenized_valid, valid_label)
-    # hate_test_dataset = hate_dataset(tokenized_test, test_label)
     print("--- pytorch dataset class Done ---")
 
-    # return hate_train_dataset, hate_valid_dataset, hate_test_dataset, test_df
     return hate_train_dataset, hate_valid_dataset, None, None
