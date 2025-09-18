@@ -33,7 +33,8 @@ def load_model_for_inference(model_name,model_dir):
     """추론(infer)에 필요한 모델과 토크나이저 load """
     # load tokenizer
     Tokenizer_NAME = model_name
-    tokenizer = AutoTokenizer.from_pretrained(Tokenizer_NAME)
+    # tokenizer = AutoTokenizer.from_pretrained(Tokenizer_NAME) # 원본 토크나이저저
+    tokenizer = AutoTokenizer.from_pretrained(model_dir)  # 훈련 후 저장된 모델 디렉토리에서 토크나이저를 로드
 
     ## load my model
     model = AutoModelForSequenceClassification.from_pretrained(model_dir)
@@ -132,4 +133,5 @@ def train(args):
     print("--- Start train ---")
     trainer.train()
     print("--- Finish train ---")
-    model.save_pretrained(args.model_dir)
+    model.save_pretrained(args.model_dir) # 모델 저장
+    tokenizer.save_pretrained(args.model_dir) # 토크나이저 저장
