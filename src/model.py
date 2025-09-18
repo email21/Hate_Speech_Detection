@@ -40,18 +40,6 @@ def load_model_for_inference(model_dir):
 
     return tokenizer, model
 
-# def load_model_for_inference(model_name,model_dir):
-#     """추론(infer)에 필요한 모델과 토크나이저 load """
-#     # load tokenizer
-#     Tokenizer_NAME = model_name
-#     # tokenizer = AutoTokenizer.from_pretrained(Tokenizer_NAME) # 원본 토크나이저저
-#     tokenizer = AutoTokenizer.from_pretrained(model_dir)  # 훈련 후 저장된 모델 디렉토리에서 토크나이저를 로드
-
-#     ## load my model
-#     model = AutoModelForSequenceClassification.from_pretrained(model_dir)
-
-#     return tokenizer, model
-
 def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
     """학습(train)을 위한 huggingface trainer 설정"""
     training_args = TrainingArguments(

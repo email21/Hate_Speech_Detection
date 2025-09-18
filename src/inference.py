@@ -32,7 +32,7 @@ def clean_data_for_inference(df):
     # 4. 삭제할 행 식별: '&'는 있지만, 유효한 태그는 없는 행
     rows_to_delete_mask = contains_ampersand & ~contains_valid_tag
     
-    # 5. 해당 행들을 제외하고 데이터프레임을 새로 만듦
+    # 5. 해당 행들을 제외하고 데이터프레임을 새로 만듦.
     cleaned_df = df[~rows_to_delete_mask].copy()
     
     print(f"원본 테스트 데이터 개수: {len(df)}")
@@ -97,7 +97,7 @@ def infer_and_eval(args):
         'output': pred_answer
     })
     
-     # 원본 테스트 데이터프레임과 예측 결과 데이터프레임을 'id' 기준으로 병합
+    # 원본 테스트 데이터프레임과 예측 결과 데이터프레임을 'id' 기준으로 병합
     # how='left'를 사용하여 원본의 모든 행을 유지
     final_output = pd.merge(original_test_df[['id', 'input']], pred_df, on='id', how='left')
 
@@ -115,34 +115,6 @@ def infer_and_eval(args):
     final_output.to_csv(os.path.join(result_path, "result.csv"), index=False)
     print("--- Save result ---")
     return final_output
-
-
-    # # set data
-    # _,_, hate_test_dataset, test_dataset = prepare_dataset(
-    #     args.dataset_dir, tokenizer, args.max_len, args.model_name
-    # )
-
-    # predict answer
-    # pred_answer = inference(model, hate_test_dataset, device, args.batch_size)   # model에서 class 추론
-    # pred = pred_answer[0]
-    # print("--- Prediction done ---")
-
-    # make csv file with predicted answer
-    # output = pd.DataFrame(
-    #     {
-    #         "id": test_dataset["id"],
-    #         "input": test_dataset["input"],
-    #         "output": pred,
-    #     }
-    # )
-
-    # # 최종적으로 완성된 예측한 라벨 csv 파일 형태로 저장.
-    # result_path = args.result_dir
-    # if not os.path.exists(result_path):
-    #     os.makedirs(result_path)
-    # output.to_csv(os.path.join(result_path, "result.csv"), index=False)
-    # print("--- Save result ---")
-    # return output
 
 def parse_args():
     """
