@@ -126,4 +126,5 @@ def prepare_dataset(dataset_dir, tokenizer, max_len, model_name):
     hate_valid_dataset = hate_dataset(tokenized_valid, valid_label)
     print("--- pytorch dataset class Done ---")
 
+    # return hate_train_dataset, hate_valid_dataset, hate_test_dataset, test_df
     return hate_train_dataset, hate_valid_dataset, None, None

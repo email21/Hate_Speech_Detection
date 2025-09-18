@@ -32,7 +32,7 @@ def clean_data_for_inference(df):
     # 4. 삭제할 행 식별: '&'는 있지만, 유효한 태그는 없는 행
     rows_to_delete_mask = contains_ampersand & ~contains_valid_tag
     
-    # 5. 해당 행들을 제외하고 데이터프레임을 새로 만듦.
+    # 5. 해당 행들을 제외하고 데이터프레임을 새로 만듦
     cleaned_df = df[~rows_to_delete_mask].copy()
     
     print(f"원본 테스트 데이터 개수: {len(df)}")
