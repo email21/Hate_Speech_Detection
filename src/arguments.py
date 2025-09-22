@@ -5,6 +5,12 @@ def add_common_args(parser):
     학습과 추론에 공통으로 사용되는 인수를 추가하는 함수
     """
     parser.add_argument(
+        "--dataset_name",
+        type=str,
+        default="sagittarius5/NIKL_AU_2023_COMPETITION_v1.0",
+        help="Hugging Face 데이터셋 이름 "
+    )
+    parser.add_argument(
         "--dataset_dir",
         type=str,
         default=".././NIKL_AU_2023_COMPETITION_v1.0",

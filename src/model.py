@@ -12,6 +12,7 @@ from transformers import Trainer, TrainingArguments
 from transformers import EarlyStoppingCallback
 from transformers.optimization import get_cosine_with_hard_restarts_schedule_with_warmup
 
+
 def load_tokenizer_and_model_for_train(args):
     """학습(train)을 위한 사전학습(pretrained) 토크나이저와 모델을 huggingface에서 load"""
     # load model and tokenizer
@@ -29,16 +30,17 @@ def load_tokenizer_and_model_for_train(args):
     print("--- Modeling Done ---")
     return tokenizer, model
 
-def load_model_for_inference(model_dir):
-    """
-    추론(infer)에 필요한 모델과 토크나이저를 저장된 경로(model_dir)에서 load
-    불필요한 model_name 매개변수를 제거하여 코드를 명확화
-    """
-    # 저장된 모델과 토크나이저를 같은 디렉토리에서 불러옵니다.
-    tokenizer = AutoTokenizer.from_pretrained(model_dir)
+def load_model_for_inference(model_name,model_dir):
+    """추론(infer)에 필요한 모델과 토크나이저 load """
+    # load tokenizer
+    Tokenizer_NAME = model_name
+    tokenizer = AutoTokenizer.from_pretrained(Tokenizer_NAME)
+
+    ## load my model
     model = AutoModelForSequenceClassification.from_pretrained(model_dir)
 
     return tokenizer, model
+
 
 def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
     """학습(train)을 위한 huggingface trainer 설정"""
@@ -54,7 +56,7 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
         weight_decay=args.weight_decay,  # strength of weight decay
         logging_dir=args.save_path + "logs",  # directory for storing logs
         logging_steps=args.logging_step,  # log saving step.
-        eval_strategy="steps",  # evaluation strategy to adopt during training
+        eval_strategy="steps",  # eval strategy to adopt during training
         # `no`: No evaluation during training.
         # `steps`: Evaluate every `eval_steps`.
         # `epoch`: Evaluate every end of epoch.
@@ -66,7 +68,7 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
 
     ## Add callback & optimizer & scheduler
     MyCallback = EarlyStoppingCallback(
-        early_stopping_patience=3, early_stopping_threshold=0.001
+        early_stopping_patience=2, early_stopping_threshold=0.001
     )
 
     optimizer = torch.optim.AdamW(
@@ -99,6 +101,7 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
 
     return trainer
 
+
 def train(args):
     """모델을 학습(train)하고 best model을 저장"""
     # fix a seed
@@ -112,21 +115,17 @@ def train(args):
     # set model and tokenizer
     tokenizer, model = load_tokenizer_and_model_for_train(args)
     model.to(device)
-    
-    special_tokens = ["&location&", "&affiliation&", "&name&", "&company&", "&brand&", 
-                      "&art&", "&online-account&", "&address&", "&tel-num&", "&other&"]
-    tokenizer.add_special_tokens({"additional_special_tokens": special_tokens})
-    model.resize_token_embeddings(len(tokenizer))
 
     # set data
     # hate_train_dataset, hate_valid_dataset, hate_test_dataset, test_dataset = (
-        # prepare_dataset(args.dataset_dir, tokenizer, args.max_len)
-       # hate_test_dataset과 test_dataset 변수가 선언만 되고 실제로는 사용되지 않고 있음
-    # train 함수는 학습과 검증 데이터셋만 필요하므로, 나머지는 _로 받기
-    hate_train_dataset, hate_valid_dataset, _, _ = prepare_dataset(
-        args.dataset_dir, tokenizer, args.max_len, args.model_name
-    )  
-# --- data loading Done ---data tokenizing Done ---pytorch dataset class Done ---
+    #     prepare_dataset(args.dataset_dir, tokenizer, args.max_len)
+    # )
+    
+    
+    # HuggingFace 사용으로 prepare_dataset의 args.dataset_dir -> args.dataset_name
+    hate_train_dataset, hate_valid_dataset, hate_test_dataset, test_dataset = (
+        prepare_dataset(args.dataset_name, tokenizer, args.max_len, args.model_name)
+    )
 
     # set trainer
     trainer = load_trainer_for_train(
@@ -137,5 +136,5 @@ def train(args):
     print("--- Start train ---")
     trainer.train()
     print("--- Finish train ---")
-    model.save_pretrained(args.model_dir) # 모델 저장
+    model.save_pretrained(args.model_dir)
     tokenizer.save_pretrained(args.model_dir) # 토크나이저 저장
