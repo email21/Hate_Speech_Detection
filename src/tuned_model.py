@@ -8,7 +8,6 @@ from transformers import (
     EarlyStoppingCallback
 )
 from transformers.optimization import get_cosine_with_hard_restarts_schedule_with_warmup
-
 from utils import compute_metrics
 from data import prepare_dataset
 from model import load_tokenizer_and_model_for_train # 기존 함수 재사용
@@ -36,7 +35,6 @@ class FocalLoss(nn.Module):
 # --- Focal Loss를 사용하기 위한 Custom Trainer ---
 class CustomTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
-    #def compute_loss(self, model, inputs, return_outputs=False):
         labels = inputs.pop("labels")
         # 정답 레이블을 one-hot 인코딩으로 변환 (Focal Loss 입력 형식에 맞게)
         labels_one_hot = F.one_hot(labels, num_classes=self.model.config.num_labels).float()
@@ -51,9 +49,6 @@ class CustomTrainer(Trainer):
         return (loss, outputs) if return_outputs else loss
 
 # --- train 함수 수정 ---
-# CustomTrainer를 사용하도록 load_trainer_for_train 함수를 호출하는 부분을 수정해야 합니다.
-# 이 예제에서는 기존 train 함수를 직접 수정하는 대신,
-# CustomTrainer를 사용하는 새로운 train 함수를 보여드립니다.
 def train_with_custom_loss(args):
     """Focal Loss를 사용하여 모델을 학습하고 저장"""
     # fix a seed
@@ -67,16 +62,10 @@ def train_with_custom_loss(args):
     # set model and tokenizer
     tokenizer, model = load_tokenizer_and_model_for_train(args)
     model.to(device)
-    
-    special_tokens = ["&location&", "&affiliation&", "&name&", "&company&", "&brand&", 
-                      "&art&", "&online-account&", "&address&", "&tel-num&", "&other&"]
-    tokenizer.add_special_tokens({"additional_special_tokens": special_tokens})
-    model.resize_token_embeddings(len(tokenizer))
    
-    # set data
-    # train 함수는 학습과 검증 데이터셋만 필요하므로, 나머지는 _로 받기
-    hate_train_dataset, hate_valid_dataset, _, _ = prepare_dataset(
-        args.dataset_dir, tokenizer, args.max_len, args.model_name
+    # HuggingFace 사용으로 prepare_dataset의 args.dataset_dir -> args.dataset_name
+    hate_train_dataset, hate_valid_dataset, hate_test_dataset, test_dataset = (
+        prepare_dataset(args.dataset_name, tokenizer, args.max_len, args.model_name)
     )
 
     # set trainer (기존 load_trainer_for_train 대신 CustomTrainer를 직접 사용)
@@ -101,7 +90,7 @@ def train_with_custom_loss(args):
     
     # Add callback & optimizer & scheduler
     my_callback = EarlyStoppingCallback(
-        early_stopping_patience=3, early_stopping_threshold=0.001
+        early_stopping_patience=2, early_stopping_threshold=0.001
     )
 
     optimizer = torch.optim.AdamW(
