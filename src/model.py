@@ -30,6 +30,12 @@ def load_tokenizer_and_model_for_train(args):
     model_config = AutoConfig.from_pretrained(MODEL_NAME)
     model_config.num_labels = 2
     print(model_config)
+    
+    # dropout 추가
+    model_config = AutoConfig.from_pretrained(MODEL_NAME)
+    model_config.num_labels = 2
+    model_config.hidden_dropout_prob = args.dropout_rate  # 드롭아웃 비율 설정
+    model_config.attention_probs_dropout_prob = args.dropout_rate
 
     model = AutoModelForSequenceClassification.from_pretrained(
         MODEL_NAME, config=model_config
@@ -101,7 +107,7 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
 
     ## Add callback & optimizer & scheduler
     MyCallback = EarlyStoppingCallback(
-        early_stopping_patience=3, early_stopping_threshold=0.001
+        early_stopping_patience=1, early_stopping_threshold=0.001
     )
 
     optimizer = torch.optim.AdamW(

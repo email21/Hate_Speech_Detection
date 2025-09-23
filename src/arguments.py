@@ -124,6 +124,12 @@ def add_train_args(parser):
         default="baseline-bert-test",
         help="wandb 에 기록되는 run name",
     )
+    parser.add_argument(
+        "--dropout_rate", 
+        type=float, 
+        default=0.3,  # 드롭아웃 비율 증가
+        help="드롭아웃 비율"
+    )
     return parser
 
 def add_infer_args(parser):
