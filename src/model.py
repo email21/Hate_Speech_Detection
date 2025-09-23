@@ -150,6 +150,7 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
         load_best_model_at_end=True,
         report_to="wandb",  # W&B 로깅 활성화
         run_name=args.run_name,  # run_name 지정
+        gradient_accumulation_steps=args.gradient_accumulation_steps,
     )
 
     ## Add callback & optimizer & scheduler
