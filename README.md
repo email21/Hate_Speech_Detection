@@ -12,7 +12,7 @@
     - 2.3 [유틸리티 모듈 (utils.py)](#23-유틸리티-모듈-utilspy)
     - 2.4 [메인 모듈 (main.py)](#24-메인-모듈-mainpy)
     - 2.5 [추론 모듈 (inference.py)](#25-추론-모듈-inferencepy)
-	- 2.6 [공통 인수 모듈(arguments.py)](#26-추론-모듈-inferencepy)
+	- 2.6 [공통 인수 모듈(arguments.py)](#26-공통-인수-모듈-argumentspy)
 ---
 
 ## 1. 프로젝트 코드 구조
@@ -93,7 +93,7 @@ Korean_AU/
 - **infer_and_eval**  
   학습된 모델로 추론을 진행하고, 예측한 결과를 반환하는 함수입니다.
   
-### 2.6 공통 인수 모듈(arguments.py)
+### 2.6 공통 인수 모듈 (arguments.py)
 
 학습된 모델을 통해 결과를 추론하는 기능을 담당합니다:
 
