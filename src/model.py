@@ -12,6 +12,27 @@ from transformers import Trainer, TrainingArguments
 from transformers import EarlyStoppingCallback
 from transformers.optimization import get_cosine_with_hard_restarts_schedule_with_warmup
 
+from transformers import TrainerCallback
+
+
+# ====[electra.encoder.layer.0.attention.self.query.weight 에러 해결용 추가]==
+class ContiguousCallback(TrainerCallback):
+    """
+    모델 저장 시점에 non-contiguous tensor를 수정하는 콜백
+    """
+
+    def on_save(self, args, state, control, model=None, **kwargs):
+        if model is None:
+            return
+
+        # 모델의 모든 파라미터를 확인하여 메모리를 연속적으로 만듭니다.
+        for name, param in model.named_parameters():
+            if not param.is_contiguous():
+                param.data = param.data.contiguous()
+
+
+# ===========================================================
+
 
 def load_tokenizer_and_model_for_train(args):
     """학습(train)을 위한 사전학습(pretrained) 토크나이저와 모델을 huggingface에서 load"""
@@ -152,7 +173,7 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
         train_dataset=hate_train_dataset,  # training dataset
         eval_dataset=hate_valid_dataset,  # evaluation dataset
         compute_metrics=compute_metrics,  # define metrics function
-        callbacks=[MyCallback],
+        callbacks=[MyCallback, ContiguousCallback()],  # 새로 추가한 ContiguousCallback
         optimizers=(
             optimizer,
             get_cosine_with_hard_restarts_schedule_with_warmup(
