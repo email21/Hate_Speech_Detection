@@ -11,6 +11,9 @@ def add_common_args(parser):
         help="Hugging Face 데이터셋 이름 "
     )
     parser.add_argument(
+        "--dataset_revision", type=str, default="main", help="데이터셋 버전"
+    )
+    parser.add_argument(
         "--dataset_dir",
         type=str,
         default=".././NIKL_AU_2023_COMPETITION_v1.0",

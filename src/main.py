@@ -25,3 +25,4 @@ if __name__ == "__main__":
 # python main.py --run_name "ssac-bert" --lr 5e-4
 # python main.py --run_name "ssac-bert" --lr 5e-3
 # python main.py --model_name klue/roberta-large
+# python main.py --dataset_revision "v1.2"          전처리된 데이터, default는 main

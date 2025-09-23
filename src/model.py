@@ -66,10 +66,25 @@ def load_model_for_inference(model_name,model_dir):
 
 def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
     """학습(train)을 위한 huggingface trainer 설정"""
+    
+     # 검증 데이터셋 유무에 따라 평가 전략 및 콜백을 동적으로 결정
+    callbacks = []
+    
+    if hate_valid_dataset is not None:
+        eval_strategy = "steps"
+        save_strategy = "steps"  # 추가: save_strategy 명시적 설정
+        load_best_model_at_end = True
+        callbacks.append(EarlyStoppingCallback(early_stopping_patience=3, early_stopping_threshold=0.001))
+    else:
+        eval_strategy = "no"
+        save_strategy = "steps"  # 추가: save_strategy 명시적 설정
+        load_best_model_at_end = False
+    
     training_args = TrainingArguments(
         output_dir=args.save_path + "/results",  # output directory
         save_total_limit=args.save_limit,  # number of total save model.
         save_steps=args.save_step,  # model saving step.
+        save_strategy=save_strategy,  # 추가: save_strategy 설정 ###################
         num_train_epochs=args.epochs,  # total number of training epochs
         learning_rate=args.lr,  # learning_rate
         per_device_train_batch_size=args.batch_size,  # batch size per device during training
@@ -78,20 +93,18 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
         weight_decay=args.weight_decay,  # strength of weight decay
         logging_dir=args.save_path + "logs",  # directory for storing logs
         logging_steps=args.logging_step,  # log saving step.
-        eval_strategy="steps",  # eval strategy to adopt during training
-        # `no`: No evaluation during training.
-        # `steps`: Evaluate every `eval_steps`.
-        # `epoch`: Evaluate every end of epoch.
+        eval_strategy=eval_strategy,  # eval strategy to adopt during training
         eval_steps=args.eval_step,  # evaluation step.
-        load_best_model_at_end=True,
+        load_best_model_at_end=load_best_model_at_end,
+        metric_for_best_model="f1",  # The metric to use to compare two different models. ########
+        greater_is_better=True,      # Whether a larger metric value is better. ######
         report_to="wandb",  # W&B 로깅 활성화
         run_name=args.run_name,  # run_name 지정
     )
-
-    ## Add callback & optimizer & scheduler
-    MyCallback = EarlyStoppingCallback(
-        early_stopping_patience=2, early_stopping_threshold=0.001
-    )
+    # ## Add callback & optimizer & scheduler
+    # MyCallback = EarlyStoppingCallback(
+    #     early_stopping_patience=3, early_stopping_threshold=0.001
+    # )
 
     optimizer = torch.optim.AdamW(
         model.parameters(),
@@ -109,7 +122,8 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
         train_dataset=hate_train_dataset,  # training dataset
         eval_dataset=hate_valid_dataset,  # evaluation dataset
         compute_metrics=compute_metrics,  # define metrics function
-        callbacks=[MyCallback],
+        callbacks=callbacks,  # 수정: [MyCallback] -> callbacks
+        #callbacks=[MyCallback],
         optimizers=(
             optimizer,
             get_cosine_with_hard_restarts_schedule_with_warmup(
@@ -146,7 +160,7 @@ def train(args):
     
     # HuggingFace 사용으로 prepare_dataset의 args.dataset_dir -> args.dataset_name
     hate_train_dataset, hate_valid_dataset, hate_test_dataset, test_dataset = (
-        prepare_dataset(args.dataset_name, tokenizer, args.max_len, args.model_name)
+        prepare_dataset(args.dataset_name, tokenizer, args.max_len, args.model_name, args.dataset_revision)
     )
 
     # set trainer
@@ -158,5 +172,5 @@ def train(args):
     print("--- Start train ---")
     trainer.train()
     print("--- Finish train ---")
-    model.save_pretrained(args.model_dir)
+    model.save_pretrained(args.model_dir) # 모델 저장
     tokenizer.save_pretrained(args.model_dir) # 토크나이저 저장
