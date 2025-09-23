@@ -7,7 +7,7 @@ def add_common_args(parser):
     parser.add_argument(
         "--dataset_name",
         type=str,
-        default="sagittarius5/NIKL_AU_2023_COMPETITION_v1.0",
+        default="ensemble-2/NIKL_AU_2023_COMPETITION_v1.0",
         help="Hugging Face 데이터셋 이름 "
     )
     parser.add_argument(
