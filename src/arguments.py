@@ -15,7 +15,7 @@ def add_common_args(parser):
     parser.add_argument(
         "--dataset_revision",
         type=str,
-        default=main,  # 기본값은 최신 버전(None)
+        default="main",  # 기본값은 최신 버전(None)
         help="Hugging Face 데이터셋의 특정 버전 (예: 커밋 해시 또는 태그)",
     )
 
