@@ -18,7 +18,7 @@ def parse_args():
 if __name__ == "__main__":
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
     args = parse_args()
-    wandb.init(project="Hate_Speech_Detection", name=args.run_name) # 혐오발언탐지
+    wandb.init(project="project2", name=args.run_name) # 혐오발언탐지
     train(args)
     
 # .sh 

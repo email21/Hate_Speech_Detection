@@ -63,6 +63,17 @@ def load_model_for_inference(model_name,model_dir):
 
     return tokenizer, model
 
+# beomi-KcELECTRA-base-v2022 실행할 때 오류나서 추가함
+class ContiguousTrainer(Trainer):
+    def _save(self, output_dir=None, state_dict=None):
+        # 모델의 모든 파라미터를 순회하며 .contiguous()를 호출하여
+        # 메모리 구조를 강제로 재정렬합니다.
+        for name, param in self.model.named_parameters():
+            if not param.is_contiguous():
+                param.data = param.data.contiguous()
+        # 메모리 재정렬이 끝난 후, 원래의 저장 로직을 실행합니다.
+        super()._save(output_dir, state_dict)
+
 
 def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
     """학습(train)을 위한 huggingface trainer 설정"""
@@ -90,7 +101,7 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
 
     ## Add callback & optimizer & scheduler
     MyCallback = EarlyStoppingCallback(
-        early_stopping_patience=2, early_stopping_threshold=0.001
+        early_stopping_patience=3, early_stopping_threshold=0.001
     )
 
     optimizer = torch.optim.AdamW(
@@ -103,7 +114,7 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
     )
     print("--- Set training arguments Done ---")
 
-    trainer = Trainer(
+    trainer = ContiguousTrainer(
         model=model,  # the instantiated 🤗 Transformers model to be trained
         args=training_args,  # training arguments, defined above
         train_dataset=hate_train_dataset,  # training dataset
@@ -159,4 +170,4 @@ def train(args):
     trainer.train()
     print("--- Finish train ---")
     model.save_pretrained(args.model_dir)
-    tokenizer.save_pretrained(args.model_dir) # 토크나이저 저장
+    tokenizer.save_pretrained(args.model_dir)
