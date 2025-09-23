@@ -20,11 +20,33 @@ def load_tokenizer_and_model_for_train(args):
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 
     # 비식별화된 단어 토큰으로 추가
-    new_tokens = ['&name&', '&location&', '&affiliation&', '&company&', '&brand&', '&art&', '&other&', '&nama&', '&affifiation&', '&name', '&online-account&', '&compnay&', '&anme&', '& name&', '&address&', '&tel-num&', '&naem&']
+    new_tokens = [
+        "&name&",
+        "&location&",
+        "&affiliation&",
+        "&company&",
+        "&brand&",
+        "&art&",
+        "&other&",
+        "&nama&",
+        "&affifiation&",
+        "&name",
+        "&online-account&",
+        "&compnay&",
+        "&anme&",
+        "& name&",
+        "&address&",
+        "&tel-num&",
+        "&naem&",
+    ]
     tokenizer.add_tokens(new_tokens)
-    
-    print("토큰 추가 확인:", tokenizer.convert_tokens_to_ids(new_tokens)) # 토큰이 잘 추가되었는지 확인 # [32000, 32001, 32002, 32003, 32004, 32005, 32006, 32007, 32008, 32009, 32010, 32011, 32012, 32013, 32014, 32015, 32016]
-    print("늘어난 토큰 크기:", len(tokenizer)) # 토큰 크기 늘어난 것 확인 # 원래는 32000개
+
+    print(
+        "토큰 추가 확인:", tokenizer.convert_tokens_to_ids(new_tokens)
+    )  # 토큰이 잘 추가되었는지 확인 # [32000, 32001, 32002, 32003, 32004, 32005, 32006, 32007, 32008, 32009, 32010, 32011, 32012, 32013, 32014, 32015, 32016]
+    print(
+        "늘어난 토큰 크기:", len(tokenizer)
+    )  # 토큰 크기 늘어난 것 확인 # 원래는 32000개
 
     # setting model hyperparameter
     model_config = AutoConfig.from_pretrained(MODEL_NAME)
@@ -34,29 +56,53 @@ def load_tokenizer_and_model_for_train(args):
     model = AutoModelForSequenceClassification.from_pretrained(
         MODEL_NAME, config=model_config
     )
-    
+
     # 모델의 임베딩 레이어 크기 조정(토큰을 늘렸기 때문에)
     model.resize_token_embeddings(len(tokenizer))
     print("임베딩 레이어 크기 조정 완료")
-    
+
     print("--- Modeling Done ---")
     return tokenizer, model
 
-def load_model_for_inference(model_name,model_dir):
-    """추론(infer)에 필요한 모델과 토크나이저 load """
+
+def load_model_for_inference(model_name, model_dir):
+    """추론(infer)에 필요한 모델과 토크나이저 load"""
     # load tokenizer
     Tokenizer_NAME = model_name
     tokenizer = AutoTokenizer.from_pretrained(Tokenizer_NAME)
 
     # 비식별화된 단어 토큰으로 추가
-    new_tokens = ['&name&', '&location&', '&affiliation&', '&company&', '&brand&', '&art&', '&other&', '&nama&', '&affifiation&', '&name', '&online-account&', '&compnay&', '&anme&', '& name&', '&address&', '&tel-num&', '&naem&']
+    new_tokens = [
+        "&name&",
+        "&location&",
+        "&affiliation&",
+        "&company&",
+        "&brand&",
+        "&art&",
+        "&other&",
+        "&nama&",
+        "&affifiation&",
+        "&name",
+        "&online-account&",
+        "&compnay&",
+        "&anme&",
+        "& name&",
+        "&address&",
+        "&tel-num&",
+        "&naem&",
+    ]
     tokenizer.add_tokens(new_tokens)
-    
-    print("토큰 추가 확인2:", tokenizer.convert_tokens_to_ids(new_tokens)) # 토큰이 잘 추가되었는지 확인
-    print("늘어난 토큰 크기2:", len(tokenizer)) # 토큰 크기 늘어난 것 확인
-    
+
+    print(
+        "토큰 추가 확인2:", tokenizer.convert_tokens_to_ids(new_tokens)
+    )  # 토큰이 잘 추가되었는지 확인
+    print("늘어난 토큰 크기2:", len(tokenizer))  # 토큰 크기 늘어난 것 확인
+
     ## load my model
     model = AutoModelForSequenceClassification.from_pretrained(model_dir)
+
+    # 모델의 임베딩 레이어 크기 조정(토큰을 늘렸기 때문에)
+    model.resize_token_embeddings(len(tokenizer))
 
     return tokenizer, model
 
@@ -139,8 +185,7 @@ def train(args):
     # hate_train_dataset, hate_valid_dataset, hate_test_dataset, test_dataset = (
     #     prepare_dataset(args.dataset_dir, tokenizer, args.max_len)
     # )
-    
-    
+
     # HuggingFace 사용으로 prepare_dataset의 args.dataset_dir -> args.dataset_name
     hate_train_dataset, hate_valid_dataset, hate_test_dataset, test_dataset = (
         prepare_dataset(args.dataset_name, tokenizer, args.max_len, args.model_name)
@@ -156,4 +201,4 @@ def train(args):
     trainer.train()
     print("--- Finish train ---")
     model.save_pretrained(args.model_dir)
-    tokenizer.save_pretrained(args.model_dir) # 토크나이저 저장
+    tokenizer.save_pretrained(args.model_dir)  # 토크나이저 저장
