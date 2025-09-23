@@ -41,20 +41,6 @@ class FocalLoss(nn.Module):
         else:
             return focal_loss
 
-    # def forward(self, inputs, targets):
-    #     # Focal Loss는 클래스가 2개일 때 binary_cross_entropy를 사용합니다.
-    #     # 만약 다중 클래스 분류라면 cross_entropy를 사용해야 합니다.
-    #     BCE_loss = F.binary_cross_entropy_with_logits(inputs, targets.float(), reduction='none')
-    #     pt = torch.exp(-BCE_loss)
-    #     F_loss = self.alpha * (1-pt)**self.gamma * BCE_loss
-
-    #     if self.reduction == 'mean':
-    #         return torch.mean(F_loss)
-    #     elif self.reduction == 'sum':
-    #         return torch.sum(F_loss)
-    #     else:
-    #         return F_loss
-
 class CustomTrainer(Trainer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -66,13 +52,12 @@ class CustomTrainer(Trainer):
         logits = outputs.get("logits")
         
         # 기본 CrossEntropyLoss 대신 FocalLoss를 사용하여 손실을 계산합니다.
-        # 우리의 문제는 이진 분류(혐오/비혐오)이므로 logits과 labels를 그대로 사용합니다.
+        # 문제는 이진 분류(혐오/비혐오)이므로 logits과 labels를 그대로 사용합니다.
         # 레이블이 0 또는 1로 구성되어 있다고 가정합니다.
         loss = self.focal_loss(logits.squeeze(-1), labels) 
         
         return (loss, outputs) if return_outputs else loss
 
-# ==================== 이 함수가 추가되었습니다! ====================
 def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
     """
     Focal Loss를 사용하는 CustomTrainer를 생성하고 반환합니다.
@@ -123,8 +108,7 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
         num_warmup_steps=args.warmup_steps,
         num_training_steps=num_training_steps,
     )
-    
-    # --- 핵심 변경점 ---
+
     # 기본 Trainer 대신 Focal Loss가 적용된 CustomTrainer를 사용합니다.
     trainer = CustomTrainer(
         model=model,

@@ -69,12 +69,6 @@ def k_fold_train(args):
         
         wandb.log({f"fold_{fold+1}_eval_f1": fold_f1_score, f"fold_{fold+1}_eval_loss": fold_loss})
         wandb.finish()
-        # fold_f1_score = eval_results['eval_f1']
-        # fold_scores.append(fold_f1_score)
-        # print(f"Fold {fold+1} F1 Score: {fold_f1_score}")
-        
-        # wandb.log({f"fold_{fold+1}_eval_f1": fold_f1_score})
-        # wandb.finish()
 
     # 4. 최종 결과 출력
     mean_f1 = np.mean(fold_scores)
@@ -107,47 +101,6 @@ def parse_args():
     
     args = parser.parse_args()
     return args
-    
-    # print(f"\n===== K-Fold 최종 결과 =====")
-    # print(f"각 Fold의 F1 Score: {fold_scores}")
-    # print(f"평균 F1 Score: {mean_f1:.4f}")
-    # print(f"F1 Score 표준편차: {std_f1:.4f}")
-
-    # #  전체 데이터로 최종 모델 재학습
-    # print("\n===== 전체 데이터로 최종 모델 재학습 시작 =====")
-    # # 모델과 토크나이저를 다시 로드하여 깨끗한 상태에서 시작
-    # tokenizer, final_model = load_tokenizer_and_model_for_train(args)
-    # final_model.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-
-    # # 전체 학습 데이터를 다시 준비
-    # tokenized_train_full = construct_tokenized_dataset(full_train_df, tokenizer, args.max_len, args.model_name)
-    # hate_train_dataset_full = hate_dataset(tokenized_train_full, full_train_df['output'].values)
-    
-    # # 최종 모델 Trainer는 eval_dataset 없이 설정 (Focal Loss 버전)
-    # final_trainer = load_trainer_for_train_with_focal_loss(args, final_model, hate_train_dataset_full, None)
-    
-    # # 평가 없이 학습만 진행하도록 training_args 수정
-    # final_trainer.args.evaluation_strategy = "no"
-    # final_trainer.args.load_best_model_at_end = False
-
-    # final_trainer.train()
-    
-    # print("최종 모델 훈련 완료.")
-    # final_model.save_pretrained(args.model_dir)
-    # tokenizer.save_pretrained(args.model_dir)
-    # print(f"최종 모델과 토크나이저가 '{args.model_dir}'에 저장되었습니다.")
-    
-# def main(args):
-#     k_fold_train(args)
-
-# if __name__ == '__main__':
-#     # 여기에 argument 파싱 코드를 넣어주세요. (e.g., from arguments import...)
-#     # 예시:
-#     from arguments import add_common_args, add_train_args
-#     parser = argparse.ArgumentParser()
-#     add_common_args(parser)
-#     add_train_args(parser)
-#     args = parser.parse_args()
     
 #     # wandb 로그인
 #     # wandb.login(key=args.wandb_key)
