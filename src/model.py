@@ -57,6 +57,9 @@ def load_model_for_inference(model_name,model_dir):
     
     ## load my model
     model = AutoModelForSequenceClassification.from_pretrained(model_dir)
+    
+    model.resize_token_embeddings(len(tokenizer))
+    print("추론용 임베딩 레이어 크기 조정 완료")
 
     return tokenizer, model
 
