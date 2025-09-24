@@ -11,12 +11,12 @@ def add_common_args(parser):
         default="ensemble-2/NIKL_AU_2023_COMPETITION_v1.0",
         help="Hugging Face 데이터셋 이름 ",
     )
-
+    # 데이터셋 버전을 위한 인자 추가
     parser.add_argument(
         "--dataset_revision",
         type=str,
         default="v1.2",  # 기본값은 최신 버전(None)
-        help="Hugging Face 데이터셋의 특정 버전 (예: 커밋 해시 또는 태그)",
+        help="Hugging Face 데이터셋의 특정 revision",
     )
 
     parser.add_argument(
@@ -30,6 +30,13 @@ def add_common_args(parser):
         type=str,
         default="klue/bert-base",
         help="HuggingFace 모델 이름 (예: klue/bert-base)",
+    )
+    # 모델 버전을 위한 인자 추가
+    parser.add_argument(
+        "--model_revision",
+        type=str,
+        default="main",  # 기본값은 'main' 브랜치
+        help="Hugging Face 모델의 버전(브랜치, 태그, 커밋 해시 등)",
     )
     parser.add_argument(
         "--max_len", type=int, default=256, help="입력 시퀀스의 최대 길이"

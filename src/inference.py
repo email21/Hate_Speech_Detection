@@ -9,6 +9,7 @@ from model import load_model_for_inference
 from data import prepare_dataset
 from arguments import add_common_args, add_infer_args
 
+
 def inference(model, tokenized_sent, device, batch_size=32):
     """학습된(trained) 모델을 통해 결과를 추론하는 function"""
     dataloader = DataLoader(tokenized_sent, batch_size=batch_size, shuffle=False)
@@ -27,13 +28,16 @@ def inference(model, tokenized_sent, device, batch_size=32):
         output_pred.append(result)
     return (np.concatenate(output_pred).tolist(),)
 
+
 def infer_and_eval(args):
     """학습된 모델로 추론(infer)한 후에 예측한 결과(pred)를 평가(eval)"""
     # set device
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # set model & tokenizer
-    tokenizer, model = load_model_for_inference(args.model_name,args.model_dir)
+    tokenizer, model = load_model_for_inference(
+        args.model_name, args.model_dir, args.model_revision
+    )
     # tokenizer, model = load_model_for_inference(model_name,model_dir)
     model.to(device)
 
@@ -43,8 +47,8 @@ def infer_and_eval(args):
     print(f"--- Loading test dataset from Hugging Face Hub: {args.dataset_name} ---")
     # test_dataset = load_data(args.dataset_name, split="test")
     # HuggingFace 사용으로 prepare_dataset의 args.dataset_dir -> args.dataset_name
-    _,_, hate_test_dataset, test_dataset = (
-        prepare_dataset(args.dataset_name, tokenizer, args.max_len, args.model_name)
+    _, _, hate_test_dataset, test_dataset = prepare_dataset(
+        args.dataset_name, tokenizer, args.max_len, args.model_name
     )
 
     # predict answer
@@ -65,11 +69,10 @@ def infer_and_eval(args):
     result_path = "./prediction/"
     if not os.path.exists(result_path):
         os.makedirs(result_path)
-    output.to_csv(
-        os.path.join(result_path,"result.csv"), index=False
-    )
+    output.to_csv(os.path.join(result_path, "result.csv"), index=False)
     print("--- Save result ---")
     return output
+
 
 def parse_args():
     """
@@ -81,11 +84,12 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+
 if __name__ == "__main__":
     args = parse_args()
     infer_and_eval(args)
-    
-    
+
+
 # if __name__ == "__main__":
 #     model_name = "klue/bert-base"
 #     model_dir = "./best_model"

@@ -34,7 +34,7 @@ def load_tokenizer_and_model_for_train(args):
     """학습(train)을 위한 사전학습(pretrained) 토크나이저와 모델을 huggingface에서 load"""
     # load model and tokenizer
     MODEL_NAME = args.model_name
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, revision=args.model_revision)
 
     # 비식별화된 단어 토큰으로 추가
     new_tokens = [
@@ -71,7 +71,7 @@ def load_tokenizer_and_model_for_train(args):
     print(model_config)
 
     model = AutoModelForSequenceClassification.from_pretrained(
-        MODEL_NAME, config=model_config
+        MODEL_NAME, config=model_config, revision=args.model_revision
     )
 
     # 모델의 임베딩 레이어 크기 조정(토큰을 늘렸기 때문에)
@@ -86,7 +86,7 @@ def load_model_for_inference(model_name, model_dir):
     """추론(infer)에 필요한 모델과 토크나이저 load"""
     # load tokenizer
     Tokenizer_NAME = model_name
-    tokenizer = AutoTokenizer.from_pretrained(Tokenizer_NAME)
+    tokenizer = AutoTokenizer.from_pretrained(Tokenizer_NAME, revision=model_revision)
 
     # 비식별화된 단어 토큰으로 추가
     new_tokens = [
