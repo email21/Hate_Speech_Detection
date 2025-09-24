@@ -1,5 +1,4 @@
 # tapt.py
-
 import argparse
 from transformers import (
     AutoTokenizer,
@@ -22,7 +21,7 @@ def run_tapt(args):
         args.dataset_name, split="train", revision=args.dataset_revision
     )
 
-    # 'input' 컬럼만 텍스트 파일로 저장
+    # 'input' 컬럼만 텍스트 파일로 저장 (TAPT 학습용)
     with open("tapt_corpus.txt", "w", encoding="utf-8") as f:
         f.write("\n".join(dataset["input"]))
 
@@ -38,11 +37,7 @@ def run_tapt(args):
     )
 
     # 3. TAPT용 데이터셋 준비
-    from datasets import load_dataset as load_dataset_from_text
-
-    tapt_dataset = load_dataset_from_text(
-        "text", data_files={"train": "tapt_corpus.txt"}
-    )
+    tapt_dataset = load_dataset("text", data_files={"train": "tapt_corpus.txt"})
 
     def tokenize_function(examples):
         return tokenizer(
@@ -62,7 +57,7 @@ def run_tapt(args):
         overwrite_output_dir=True,
         num_train_epochs=args.epochs,
         per_device_train_batch_size=args.batch_size,
-        save_strategy="epoch",  # 에폭 단위로 저장하여 안정성 확보
+        save_strategy="epoch",
         save_total_limit=1,
         prediction_loss_only=True,
         logging_steps=100,
@@ -78,7 +73,7 @@ def run_tapt(args):
         ),
     )
 
-    print("--- Starting TAPT ---")
+    print(f"--- Starting TAPT for {args.base_model_name} on {args.dataset_name} ---")
     trainer.train()
     trainer.save_model(args.output_model_path)
     print(f"--- TAPT finished. Model saved to {args.output_model_path} ---")
