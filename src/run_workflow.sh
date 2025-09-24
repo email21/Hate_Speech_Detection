@@ -1,9 +1,11 @@
 #!/bin/bash
 # TAPT 및 앙상블 자동화 워크플로우 스크립트
+# GPU 자원 부족 문제를 해결하기 위해 모든 학습을 순차적으로 실행하도록 수정
+
 # 오류 발생 시 즉시 중단
 set -e
 
-# --- 환경 변수 설정 ---
+# --- 변수 설정 ---
 NIKL_DATASET="ensemble-2/NIKL_AU_2023_COMPETITION_v1.0"
 NIKL_REVISION="v1.2"
 AEDA_DATASET="ensemble-2/AEDA-dataset"
