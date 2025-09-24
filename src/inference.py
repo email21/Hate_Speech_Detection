@@ -44,7 +44,7 @@ def infer_and_eval(args):
     # test_dataset = load_data(args.dataset_name, split="test")
     # HuggingFace 사용으로 prepare_dataset의 args.dataset_dir -> args.dataset_name
     _,_, hate_test_dataset, test_dataset = (
-        prepare_dataset(args.dataset_name, tokenizer, args.max_len, args.model_name)
+        prepare_dataset(args.dataset_name, tokenizer, args.max_len, args.model_name, revision=args.dataset_revision)
     )
 
     # predict answer
