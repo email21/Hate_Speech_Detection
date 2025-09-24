@@ -87,7 +87,7 @@ def add_train_args(parser):
     parser.add_argument(
         "--gradient_accumulation_steps",
         type=int,
-        default=1,
+        default=4,
         help="그래디언트 누적 스텝 수",
     )
     parser.add_argument(
