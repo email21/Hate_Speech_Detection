@@ -85,6 +85,12 @@ def add_train_args(parser):
         "--scheduler", type=str, default="linear", help="학습률 스케줄러 타입"
     )
     parser.add_argument(
+        "--gradient_accumulation_steps",
+        type=int,
+        default=1,
+        help="그래디언트 누적 스텝 수",
+    )
+    parser.add_argument(
         "--run_name",
         type=str,
         default="baseline-bert-test",
