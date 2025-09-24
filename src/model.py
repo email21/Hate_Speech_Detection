@@ -15,6 +15,21 @@ from transformers.optimization import get_cosine_with_hard_restarts_schedule_wit
 from transformers import TrainerCallback
 
 
+# ==============================================================================
+class ContiguousTrainer(Trainer):
+    def _save(self, output_dir=None, state_dict=None):
+        # 저장 직전에 모든 파라미터의 메모리를 강제로 연속적으로 만듭니다.
+        for name, param in self.model.named_parameters():
+            if not param.is_contiguous():
+                param.data = param.data.contiguous()
+
+        # 메모리 재정렬 후, 원래의 저장 로직을 실행합니다.
+        super()._save(output_dir, state_dict)
+
+
+# ==============================================================================
+
+
 def load_tokenizer_and_model_for_train(args):
     """학습(train)을 위한 사전학습(pretrained) 토크나이저와 모델을 huggingface에서 load"""
     # load model and tokenizer
