@@ -136,7 +136,7 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
 
     ## Add callback & optimizer & scheduler
     MyCallback = EarlyStoppingCallback(
-        early_stopping_patience=2, early_stopping_threshold=0.001
+        early_stopping_patience=3, early_stopping_threshold=0.001
     )
 
     optimizer = torch.optim.AdamW(
@@ -150,7 +150,7 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
     print("--- Set training arguments Done ---")
 
     # trainer = Trainer(
-    trainer = Trainer(
+    trainer = ContiguousTrainer(
         model=model,  # the instantiated 🤗 Transformers model to be trained
         args=training_args,  # training arguments, defined above
         train_dataset=hate_train_dataset,  # training dataset
