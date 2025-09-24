@@ -166,14 +166,12 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
 
     # trainer = Trainer(
     trainer = ContiguousTrainer(
-        model=model,  # the instantiated 🤗 Transformers model to be trained
-        args=training_args,  # training arguments, defined above
-        train_dataset=hate_train_dataset,  # training dataset
-        eval_dataset=hate_valid_dataset,  # evaluation dataset
-        compute_metrics=compute_metrics,  # define metrics function
-        callbacks=[
-            MyCallback,
-        ],
+        model=model,
+        args=training_args,
+        train_dataset=hate_train_dataset,
+        eval_dataset=hate_valid_dataset,
+        compute_metrics=compute_metrics,
+        callbacks=[MyCallback],
         optimizers=(
             optimizer,
             get_cosine_with_hard_restarts_schedule_with_warmup(
@@ -238,5 +236,5 @@ def train(args):
     print("--- Start train ---")
     trainer.train()
     print("--- Finish train ---")
-    model.save_pretrained(args.model_dir)
-    tokenizer.save_pretrained(args.model_dir)  # 토크나이저 저장
+    # model.save_pretrained(args.model_dir)
+    # tokenizer.save_pretrained(args.model_dir)  # 토크나이저 저장
