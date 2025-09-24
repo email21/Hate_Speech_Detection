@@ -15,25 +15,6 @@ from transformers.optimization import get_cosine_with_hard_restarts_schedule_wit
 from transformers import TrainerCallback
 
 
-# ====[electra.encoder.layer.0.attention.self.query.weight 에러 해결용 추가]==
-class ContiguousCallback(TrainerCallback):
-    """
-    모델 저장 시점에 non-contiguous tensor를 수정하는 콜백
-    """
-
-    def on_save(self, args, state, control, model=None, **kwargs):
-        if model is None:
-            return
-
-        # 모델의 모든 파라미터를 확인하여 메모리를 연속적으로 만듭니다.
-        for name, param in model.named_parameters():
-            if not param.is_contiguous():
-                param.data = param.data.contiguous()
-
-
-# ===========================================================
-
-
 def load_tokenizer_and_model_for_train(args):
     """학습(train)을 위한 사전학습(pretrained) 토크나이저와 모델을 huggingface에서 load"""
     # load model and tokenizer
@@ -167,13 +148,16 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
     )
     print("--- Set training arguments Done ---")
 
+    # trainer = Trainer(
     trainer = Trainer(
         model=model,  # the instantiated 🤗 Transformers model to be trained
         args=training_args,  # training arguments, defined above
         train_dataset=hate_train_dataset,  # training dataset
         eval_dataset=hate_valid_dataset,  # evaluation dataset
         compute_metrics=compute_metrics,  # define metrics function
-        callbacks=[MyCallback, ContiguousCallback()],  # 새로 추가한 ContiguousCallback
+        callbacks=[
+            MyCallback,
+        ],
         optimizers=(
             optimizer,
             get_cosine_with_hard_restarts_schedule_with_warmup(
@@ -183,6 +167,23 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
             ),
         ),
     )
+
+    # 트레이너의 _save 메소드를 직접 교체하여 오류를 원천 차단합니다.
+    # ==============================================================================
+    original_save = trainer._save
+
+    def new_save(output_dir=None, state_dict=None):
+        # 1. 저장 직전에 모든 파라미터의 메모리를 강제로 연속적으로 만듭니다.
+        for name, param in trainer.model.named_parameters():
+            if not param.is_contiguous():
+                param.data = param.data.contiguous()
+
+        # 2. 메모리 재정렬 후, 원래의 저장 로직을 호출합니다.
+        original_save(output_dir, state_dict)
+
+    trainer._save = new_save
+    # ===========================================================================
+
     print("--- Set Trainer Done ---")
 
     return trainer
