@@ -10,7 +10,7 @@ NIKL_DATASET="ensemble-2/NIKL_AU_2023_COMPETITION_v1.0"
 NIKL_REVISION="v1.2"
 AEDA_DATASET="ensemble-2/AEDA-dataset"
 AEDA_REVISION="v1.1"
-TAPT_EPOCHS=5
+TAPT_EPOCHS=2
 
 TAPT_MODEL_DIR="../tapt_models"
 FT_MODEL_DIR="../ft_models"
@@ -92,10 +92,10 @@ run_finetune "monologg/koelectra-small-v3-discriminator" "ft_koelectra-small" "5
 run_finetune "monologg/koelectra-base-v3-discriminator" "ft_koelectra-base" "5e-5" "koelectra-base"
 
 # TAPT된 모델 4종 학습
-run_finetune "$TAPT_MODEL_DIR/bert_on_nikl" "ft_tapt-bert-nikl" "3e-5" "tapt-bert-nikl"
-run_finetune "$TAPT_MODEL_DIR/beomi-kcbert_on_nikl" "ft_tapt-beomi-kcbert-nikl" "5e-5" "tapt-beomi-kcbert-nikl"
-run_finetune "$TAPT_MODEL_DIR/bert_on_aeda" "ft_tapt-bert-aeda" "3e-5" "tapt-bert-aeda"
-run_finetune "$TAPT_MODEL_DIR/beomi-kcbert_on_aeda" "ft_tapt-beomi-kcbert-aeda" "5e-5" "tapt-beomi-kcbert-aeda"
+run_finetune "$TAPT_MODEL_DIR/bert_on_nikl" "ft_tapt-bert-nikl" "2e-5" "tapt-bert-nikl"
+run_finetune "$TAPT_MODEL_DIR/beomi-kcbert_on_nikl" "ft_tapt-beomi-kcbert-nikl" "3e-5" "tapt-beomi-kcbert-nikl"
+run_finetune "$TAPT_MODEL_DIR/bert_on_aeda" "ft_tapt-bert-aeda" "2e-5" "tapt-bert-aeda"
+run_finetune "$TAPT_MODEL_DIR/beomi-kcbert_on_aeda" "ft_tapt-beomi-kcbert-aeda" "3e-5" "tapt-beomi-kcbert-aeda"
 
 echo "--- 모든 Fine-tuning 프로세스 완료 ---"
 

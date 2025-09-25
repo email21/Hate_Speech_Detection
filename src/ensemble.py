@@ -10,6 +10,7 @@ from datasets import load_dataset
 
 
 def inference_for_ensemble(model, tokenized_sent, device, batch_size=32):
+    """앙상블을 위해 로짓(logits)을 반환하는 추론 함수"""
     dataloader = DataLoader(tokenized_sent, batch_size=batch_size, shuffle=False)
     model.eval()
     output_logits = []
@@ -27,6 +28,7 @@ def inference_for_ensemble(model, tokenized_sent, device, batch_size=32):
 
 
 def run_ensemble(args):
+    """지정된 모델 경로들로 앙상블을 수행합니다."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     print(
@@ -39,18 +41,22 @@ def run_ensemble(args):
     all_logits = []
     for model_path in args.model_paths:
         if not model_path or not model_path.strip():
-            continue  # 경로가 비어있으면 건너뛰기
+            continue
         print(f"\n--- Processing model from: {model_path} ---")
 
-        # [핵심 수정] 1. 체크포인트의 config.json을 먼저 로드
+        # --- [핵심 수정 로직 시작] ---
+        # 1. 체크포인트 폴더의 config.json을 먼저 로드합니다.
         config = AutoConfig.from_pretrained(model_path)
-        # 2. config에서 원본 모델 이름 (_name_or_path)을 가져옴
+        # 2. config에서 원본 모델 이름 (_name_or_path)을 가져옵니다.
         original_model_name = config._name_or_path
 
-        # 3. 원본 모델 이름으로 Hub에서 정확한 토크나이저를 로드
+        print(f"    (Found original model name: '{original_model_name}')")
+
+        # 3. 원본 모델 이름으로 Hub에서 정확한 토크나이저를 로드합니다.
         tokenizer = AutoTokenizer.from_pretrained(
             original_model_name, revision=args.model_revision
         )
+        # --- [핵심 수정 로직 종료] ---
 
         # 학습 때와 동일하게 특수 토큰 추가
         new_tokens = [
