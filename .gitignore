@@ -170,3 +170,4 @@ best_model/
 model/
 prediction/
 wandb/
+pretrained/

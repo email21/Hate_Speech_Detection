@@ -3,7 +3,6 @@ import pandas as pd
 import torch
 from datasets import load_dataset
 
-
 class hate_dataset(torch.utils.data.Dataset):
     """dataframe을 torch dataset class로 변환"""
 
@@ -28,13 +27,13 @@ class hate_dataset(torch.utils.data.Dataset):
 #     print(dataset.head())
 #     return dataset
 
-def load_data(dataset_name, split):
+def load_data(dataset_name, split, revision):
     """HuggingFace에서 데이터셋 로드 → pandas DataFrame 반환"""
     from datasets import load_dataset
     
     try:
         # HF Dataset 로드
-        hf_dataset = load_dataset(dataset_name, split=split)
+        hf_dataset = load_dataset(dataset_name, revision=revision, split=split)
         
         # pandas DataFrame으로 변환
         dataset = hf_dataset.to_pandas()
@@ -72,7 +71,7 @@ def construct_tokenized_dataset(dataset, tokenizer, max_length, model_name):
     return tokenized_senetences
 
 
-def prepare_dataset(dataset_name, tokenizer, max_len, model_name):
+def prepare_dataset(dataset_name, tokenizer, max_len, model_name, revision):
     """학습(train)과 평가(test)를 위한 데이터셋을 준비"""
     # load_data
     # train_dataset = load_data(os.path.join(dataset_dir, "train.csv")) 
@@ -81,9 +80,9 @@ def prepare_dataset(dataset_name, tokenizer, max_len, model_name):
     # print("--- data loading Done ---")
     
     # HuggingFace에서 데이터 로드
-    train_dataset = load_data(dataset_name, "train")
-    valid_dataset = load_data(dataset_name, "validation") 
-    test_dataset = load_data(dataset_name, "test")
+    train_dataset = load_data(dataset_name, "train", revision=revision)
+    valid_dataset = load_data(dataset_name, "validation", revision=revision) 
+    test_dataset = load_data(dataset_name, "test", revision=revision)
     print("--- data loading Done ---")
 
     # split label
@@ -104,3 +103,16 @@ def prepare_dataset(dataset_name, tokenizer, max_len, model_name):
     print("--- pytorch dataset class Done ---")
 
     return hate_train_dataset, hate_valid_dataset, hate_test_dataset, test_dataset
+
+def prepare_kfold_dataset(dataset_name, revision):
+    """K-Fold를 위해 전체 train 데이터와 test 데이터를 불러오는 함수"""
+    # HuggingFace에서 전체 학습 데이터 로드
+    # K-Fold는 학습 데이터를 나누는 것이므로, validation은 따로 불러오지 않습니다.
+    full_train_dataset = load_data(dataset_name, "train", revision=args.revision)
+    test_dataset = load_data(dataset_name, "test", revision=args.revision)
+
+    if full_train_dataset is None or test_dataset is None:
+        raise ValueError("K-Fold용 데이터셋 로딩에 실패했습니다.")
+
+    print("--- K-Fold data loading Done ---")
+    return full_train_dataset, test_dataset

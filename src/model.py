@@ -1,7 +1,10 @@
 import pytorch_lightning as pl
 import torch
 from utils import compute_metrics
-from data import prepare_dataset
+from data import prepare_dataset, prepare_kfold_dataset, construct_tokenized_dataset, hate_dataset
+import numpy as np
+from sklearn.model_selection import StratifiedKFold
+import os
 
 from transformers import (
     AutoTokenizer,
@@ -31,11 +34,11 @@ def load_tokenizer_and_model_for_train(args):
     model_config.num_labels = 2
     print(model_config)
     
-    # dropout 추가
-    model_config = AutoConfig.from_pretrained(MODEL_NAME)
-    model_config.num_labels = 2
-    model_config.hidden_dropout_prob = args.dropout_rate  # 드롭아웃 비율 설정
-    model_config.attention_probs_dropout_prob = args.dropout_rate
+    # # dropout 추가
+    # model_config = AutoConfig.from_pretrained(MODEL_NAME)
+    # model_config.num_labels = 2
+    # model_config.hidden_dropout_prob = args.dropout_rate  # 드롭아웃 비율 설정
+    # model_config.attention_probs_dropout_prob = args.dropout_rate
 
     model = AutoModelForSequenceClassification.from_pretrained(
         MODEL_NAME, config=model_config
@@ -46,6 +49,26 @@ def load_tokenizer_and_model_for_train(args):
     print("임베딩 레이어 크기 조정 완료")
     
     print("--- Modeling Done ---")
+    return tokenizer, model
+
+# K-Fold를 위한 함수(load_tokenizer_and_model_for_train 대신)
+def load_tokenizer_and_model_for_kfold(model_name):
+    """
+    K-Fold의 각 fold마다 새로운 모델과 토크나이저를 로드하는 함수
+    (기존 load_tokenizer_and_model_for_train 함수와 거의 동일)
+    """
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+    # 비식별화 토큰 추가 (기존 코드와 동일)
+    new_tokens = ['&name&', '&location&', '&affiliation&', '&company&', '&brand&', '&art&', '&other&', '&nama&', '&affifiation&', '&name', '&online-account&', '&compnay&', '&anme&', '& name&', '&address&', '&tel-num&', '&naem&']
+    tokenizer.add_tokens(new_tokens)
+
+    model_config = AutoConfig.from_pretrained(model_name)
+    model_config.num_labels = 2
+
+    model = AutoModelForSequenceClassification.from_pretrained(model_name, config=model_config)
+    model.resize_token_embeddings(len(tokenizer))
+    
     return tokenizer, model
 
 def load_model_for_inference(model_name,model_dir):
@@ -72,12 +95,10 @@ def load_model_for_inference(model_name,model_dir):
 # beomi-KcELECTRA-base-v2022 실행할 때 오류나서 추가함
 class ContiguousTrainer(Trainer):
     def _save(self, output_dir=None, state_dict=None):
-        # 모델의 모든 파라미터를 순회하며 .contiguous()를 호출하여
-        # 메모리 구조를 강제로 재정렬합니다.
+        # contiguous 추가
         for name, param in self.model.named_parameters():
             if not param.is_contiguous():
                 param.data = param.data.contiguous()
-        # 메모리 재정렬이 끝난 후, 원래의 저장 로직을 실행합니다.
         super()._save(output_dir, state_dict)
 
 
@@ -107,7 +128,7 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
 
     ## Add callback & optimizer & scheduler
     MyCallback = EarlyStoppingCallback(
-        early_stopping_patience=1, early_stopping_threshold=0.001
+        early_stopping_patience=3, early_stopping_threshold=0.001
     )
 
     optimizer = torch.optim.AdamW(
@@ -151,29 +172,113 @@ def train(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("device:", device)
 
-    # set model and tokenizer
-    tokenizer, model = load_tokenizer_and_model_for_train(args)
-    model.to(device)
+    if args.n_splits > 1:
+        print(f"--- Starting {args.n_splits}-Fold Cross-Validation ---")
+        
+        # 1. K-Fold를 위한 전체 데이터 로드
+        DATASET_REVISION = args.revision
+        full_train_df, _ = prepare_kfold_dataset(args.dataset_name, DATASET_REVISION)
 
-    # set data
-    # hate_train_dataset, hate_valid_dataset, hate_test_dataset, test_dataset = (
-    #     prepare_dataset(args.dataset_dir, tokenizer, args.max_len)
-    # )
-    
-    
-    # HuggingFace 사용으로 prepare_dataset의 args.dataset_dir -> args.dataset_name
-    hate_train_dataset, hate_valid_dataset, hate_test_dataset, test_dataset = (
-        prepare_dataset(args.dataset_name, tokenizer, args.max_len, args.model_name)
-    )
+        # 2. StratifiedKFold 설정
+        skf = StratifiedKFold(n_splits=args.n_splits, shuffle=True, random_state=args.seed)
+        labels = full_train_df["output"].values
+        
+        all_fold_metrics = []
 
-    # set trainer
-    trainer = load_trainer_for_train(
-        args, model, hate_train_dataset, hate_valid_dataset
-    )
+        # 3. K-Fold 루프 시작
+        for fold, (train_idx, val_idx) in enumerate(skf.split(full_train_df, labels)):
+            print(f"\n========== Fold {fold + 1}/{args.n_splits} ==========")
 
-    # train model
-    print("--- Start train ---")
-    trainer.train()
-    print("--- Finish train ---")
-    model.save_pretrained(args.model_dir)
-    tokenizer.save_pretrained(args.model_dir)
+            # 4. Fold마다 모델과 토크나이저를 새로 로드
+            tokenizer, model = load_tokenizer_and_model_for_kfold(args.model_name)
+            model.to(device)
+
+            # 5. 현재 Fold에 해당하는 데이터 분할 및 Pytorch Dataset 생성
+            train_df = full_train_df.iloc[train_idx]
+            valid_df = full_train_df.iloc[val_idx]
+            
+            tokenized_train = construct_tokenized_dataset(train_df, tokenizer, args.max_len, args.model_name)
+            tokenized_valid = construct_tokenized_dataset(valid_df, tokenizer, args.max_len, args.model_name)
+
+            hate_train_dataset = hate_dataset(tokenized_train, train_df["output"].values)
+            hate_valid_dataset = hate_dataset(tokenized_valid, valid_df["output"].values)
+            
+            # 6. Fold별 TrainingArguments 설정
+            fold_output_dir = os.path.join(args.save_path, f"fold_{fold+1}")
+            fold_run_name = f"{args.run_name}_fold_{fold+1}"
+
+            training_args = TrainingArguments(
+                output_dir=fold_output_dir,
+                run_name=fold_run_name,
+                # ... (나머지 인자들은 이전과 동일하게 설정) ...
+                num_train_epochs=args.epochs,
+                per_device_train_batch_size=args.batch_size,
+                learning_rate=args.lr,
+                weight_decay=args.weight_decay,
+                warmup_steps=args.warmup_steps,
+                logging_dir=os.path.join(fold_output_dir, "logs"),
+                logging_steps=args.logging_step,
+                eval_strategy="steps",
+                eval_steps=args.eval_step,
+                save_steps=args.save_step,
+                save_total_limit=args.save_limit,
+                load_best_model_at_end=True,
+                metric_for_best_model="f1",
+                report_to="wandb",
+            )
+            
+            # Trainer 설정 (ContiguousTrainer 사용)
+            trainer = ContiguousTrainer(
+                model=model,
+                args=training_args,
+                train_dataset=hate_train_dataset,
+                eval_dataset=hate_valid_dataset,
+                compute_metrics=compute_metrics,
+                callbacks=[EarlyStoppingCallback(early_stopping_patience=3)],
+            )
+
+            # 7. 현재 Fold 학습 시작
+            trainer.train()
+
+            # 8. Fold 평가 및 결과 저장
+            metrics = trainer.evaluate(eval_dataset=hate_valid_dataset)
+            all_fold_metrics.append(metrics)
+            
+            # 9. Fold별 베스트 모델 저장
+            best_model_path = os.path.join(args.model_dir, f"best_model_fold_{fold+1}")
+            trainer.save_model(best_model_path)
+            tokenizer.save_pretrained(best_model_path)
+            print(f"Best model for fold {fold+1} saved to {best_model_path}")
+
+        # 10. 최종 평균 점수 출력
+        print("\n========== K-Fold Cross-Validation Summary ==========")
+        avg_eval_f1 = np.mean([m["eval_f1"] for m in all_fold_metrics])
+        print(f"Average F1 Score across {args.n_splits} folds: {avg_eval_f1:.4f}")
+
+    # ==================================================================
+    # ## 일반 학습 로직 (n_splits <= 1)
+    # ==================================================================
+    else:
+        print("--- Starting Single Training Run (K-Fold is not used) ---")
+
+        # 1. 모델/토크나이저 로드
+        tokenizer, model = load_tokenizer_and_model_for_train(args)
+        model.to(device)
+
+        # 2. 데이터셋 준비
+        hate_train_dataset, hate_valid_dataset, _, _ = prepare_dataset(
+            args.dataset_name, tokenizer, args.max_len, args.model_name, args.revision
+        )
+
+        # 3. Trainer 준비
+        trainer = load_trainer_for_train(
+            args, model, hate_train_dataset, hate_valid_dataset
+        )
+
+        # 4. 학습 시작
+        trainer.train()
+        print("--- Finish train ---")
+        
+        # 5. 최종 모델 저장
+        model.save_pretrained(args.model_dir)
+        tokenizer.save_pretrained(args.model_dir)

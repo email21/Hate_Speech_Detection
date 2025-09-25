@@ -40,6 +40,12 @@ def add_common_args(parser):
         default=".././best_model",
         help="학습 시 모델을 저장하고, 추론 시 불러올 모델의 경로",
     )
+    parser.add_argument(
+        "--revision",
+        type=str,
+        default="v1.2",
+        help="Hugging Face 데이터셋 버전 "
+    )
     return parser
 
 def add_train_args(parser):
@@ -129,6 +135,12 @@ def add_train_args(parser):
         type=float, 
         default=0.3,  # 드롭아웃 비율 증가
         help="드롭아웃 비율"
+    )
+    parser.add_argument(
+        "--n_splits",
+        type=int,
+        default=1,
+        help="K-Fold 분할 수 (1 이하로 설정 시 K-Fold 미사용)",
     )
     return parser
 

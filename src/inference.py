@@ -8,6 +8,7 @@ from tqdm import tqdm
 from model import load_model_for_inference
 from data import prepare_dataset
 from arguments import add_common_args, add_infer_args
+from sklearn.metrics import f1_score, accuracy_score
 
 def inference(model, tokenized_sent, device, batch_size=32):
     """학습된(trained) 모델을 통해 결과를 추론하는 function"""
@@ -44,13 +45,25 @@ def infer_and_eval(args):
     # test_dataset = load_data(args.dataset_name, split="test")
     # HuggingFace 사용으로 prepare_dataset의 args.dataset_dir -> args.dataset_name
     _,_, hate_test_dataset, test_dataset = (
-        prepare_dataset(args.dataset_name, tokenizer, args.max_len, args.model_name)
+        prepare_dataset(args.dataset_name, tokenizer, args.max_len, args.model_name, args.revision)
     )
 
     # predict answer
     pred_answer = inference(model, hate_test_dataset, device)  # model에서 class 추론
     pred = pred_answer[0]
     print("--- Prediction done ---")
+    
+    # test_dataset (DataFrame)에서 실제 정답 값을 가져옵니다.
+    true_labels = test_dataset['output'].values
+    
+    # F1 점수와 정확도를 계산합니다.
+    f1 = f1_score(true_labels, pred, average="micro")
+    acc = accuracy_score(true_labels, pred)
+
+    print("\n--- Evaluation on Test Set ---")
+    print(f"Accuracy: {acc:.4f}")
+    print(f"F1 Score (micro): {f1:.4f}")
+    print("--------------------------------\n")
 
     # make csv file with predicted answer
     output = pd.DataFrame(
