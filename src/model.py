@@ -78,7 +78,7 @@ def load_tokenizer_and_model_for_train(args):
     return tokenizer, model
 
 
-def load_model_for_inference(model_name, model_dir):
+def load_model_for_inference(model_name, model_dir, model_revision):
     """추론(infer)에 필요한 모델과 토크나이저 load"""
     # load tokenizer
     Tokenizer_NAME = model_name

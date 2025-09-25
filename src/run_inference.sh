@@ -37,7 +37,7 @@ run_single_inference() {
         --model_dir "$model_checkpoint_path"
         
     # 생성된 결과 파일의 이름을 지정된 이름으로 변경합니다.
-    mv ./prediction/tapt_result.csv "./prediction/$output_filename"
+    mv ./prediction/result.csv "./prediction/$output_filename"
     
     echo "--- 완료. 결과 저장: ./prediction/$output_filename ---"
 }
