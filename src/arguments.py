@@ -7,11 +7,9 @@ def add_common_args(parser):
     parser.add_argument(
         "--dataset_name",
         type=str,
-        default="ensemble-2/NIKL_AU_2023_COMPETITION_v1.0",
+        #default="ensemble-2/NIKL_AU_2023_COMPETITION_v1.0",
+        default="sagittarius5/NIKL_AU_2023_COMPETITION_v1.0",
         help="Hugging Face 데이터셋 이름 "
-    )
-    parser.add_argument(
-        "--dataset_revision", type=str, default="main", help="데이터셋 버전"
     )
     parser.add_argument(
         "--dataset_dir",
@@ -37,11 +35,17 @@ def add_common_args(parser):
         default=8, 
         help="배치 사이즈 (메모리에 맞게 조절 16,32)"
     )
+    # parser.add_argument(
+    #     "--model_dir",
+    #     type=str,
+    #     default=".././best_model",
+    #     help="학습 시 모델을 저장하고, 추론 시 불러올 모델의 경로",
+    # )
     parser.add_argument(
         "--model_dir",
         type=str,
-        default=".././best_model",
-        help="학습 시 모델을 저장하고, 추론 시 불러올 모델의 경로",
+        default="./best_model", # 경로 ./ 로 수정
+        help="CPT 모델을 저장하고, 파인튜닝 시 불러올 모델의 경로",
     )
     return parser
 
@@ -83,8 +87,7 @@ def add_train_args(parser):
         "--save_limit", 
         type=int, 
         default=5, 
-        #help="저장할 모델의 최대 개수"
-        help="저장할 모델 체크포인트의 최대 개수 (Trainer 인자)"
+        help="저장할 모델의 최대 개수"
     )
     parser.add_argument(
         "--seed", 

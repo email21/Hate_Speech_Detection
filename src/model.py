@@ -10,8 +10,7 @@ from transformers import (
 )
 from transformers import Trainer, TrainingArguments
 from transformers import EarlyStoppingCallback
-from transformers.optimization import get_cosine_with_hard_restarts_schedule_with_warmup, get_linear_schedule_with_warmup # linear 스케줄러 추가
-
+from transformers.optimization import get_cosine_with_hard_restarts_schedule_with_warmup
 
 
 def load_tokenizer_and_model_for_train(args):
@@ -58,150 +57,16 @@ def load_model_for_inference(model_name,model_dir):
     
     ## load my model
     model = AutoModelForSequenceClassification.from_pretrained(model_dir)
-    
-    model.resize_token_embeddings(len(tokenizer))
-    print("추론용 임베딩 레이어 크기 조정 완료")
 
     return tokenizer, model
 
 
-# def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
-#     """학습(train)을 위한 huggingface trainer 설정"""
-#     # # [수정] 검증 데이터셋 유무에 따라 평가 전략을 동적으로 결정합니다.
-#     # # hate_valid_dataset이 None이면(최종 학습 단계), 평가를 수행하지 않습니다.
-#     # if hate_valid_dataset is None:
-#     #     eval_strategy = "no"
-#     #     load_best_model_at_end = False
-#     # else:
-#     #     eval_strategy = "steps"
-#     #     load_best_model_at_end = True
-    
-#     # training_args = TrainingArguments(
-#     #     output_dir=args.save_path + "/results",  # output directory
-#     #     save_total_limit=args.save_limit,  # number of total save model.
-#     #     save_steps=args.save_step,  # model saving step.
-#     #     num_train_epochs=args.epochs,  # total number of training epochs
-#     #     learning_rate=args.lr,  # learning_rate
-#     #     per_device_train_batch_size=args.batch_size,  # batch size per device during training
-#     #     per_device_eval_batch_size=8,  # batch size for evaluation
-#     #     warmup_steps=args.warmup_steps,  # number of warmup steps for learning rate scheduler
-#     #     weight_decay=args.weight_decay,  # strength of weight decay
-#     #     logging_dir=args.save_path + "logs",  # directory for storing logs
-#     #     logging_steps=args.logging_step,  # log saving step.
-#     #     eval_strategy=eval_strategy,  # [수정] 동적으로 설정된 평가 전략 적용
-#     #     eval_steps=args.eval_step,
-#     #     load_best_model_at_end=load_best_model_at_end, # [수정] 동적으로 설정된 값 적용
-#     #     #eval_strategy="steps",  # eval strategy to adopt during training
-#     #     # `no`: No evaluation during training.
-#     #     # `steps`: Evaluate every `eval_steps`.
-#     #     # `epoch`: Evaluate every end of epoch.
-#     #     #eval_steps=args.eval_step,  # evaluation step.
-#     #     #load_best_model_at_end=True,
-#     #     metric_for_best_model="f1",  # The metric to use to compare two different models.    추가 ~~~~~~~~~~~~~~~~~~~~~~~~``
-#     #     greater_is_better=True,      # Whether a larger metric value is better.                  추가 ~~~~~~~~~~~~~~~~~
-#     #     report_to="wandb",  # W&B 로깅 활성화
-#     #     run_name=args.run_name,  # run_name 지정
-#     # )
-#     # 검증 데이터셋 유무에 따라 평가 전략 및 콜백을 동적으로 결정
-#     callbacks = []
-#     # K-fold 전용 early stopping 설정
-#     # if hate_valid_dataset is not None:
-#     #     k_fold_patience = 3
-#     #     k_fold_threshold = 0.001
-#     #     #k_fold_patience = 5  # 일반보다 더 관대
-#     #     #k_fold_threshold = 0.0001  # 더 작은 임계값
-#     #     callbacks.append(EarlyStoppingCallback(
-#     #         early_stopping_patience=k_fold_patience,
-#     #         early_stopping_threshold=k_fold_threshold
-#     #     ))
-#     if hate_valid_dataset is not None:
-#         eval_strategy = "steps"
-#         save_strategy = "steps"  # 추가: save_strategy 명시적 설정
-#         load_best_model_at_end = True
-#         callbacks.append(EarlyStoppingCallback(early_stopping_patience=3, early_stopping_threshold=0.001))
-#     else:
-#         eval_strategy = "no"
-#         save_strategy = "steps"  # 추가: save_strategy 명시적 설정
-#         load_best_model_at_end = False
-    
-#     training_args = TrainingArguments(
-#         output_dir=args.save_path + "/results",  # output directory
-#         save_total_limit=args.save_limit,  # number of total save model.
-#         save_steps=args.save_step,  # model saving step.
-#         save_strategy=save_strategy,  # 추가: save_strategy 설정 ###################
-#         num_train_epochs=args.epochs,  # total number of training epochs
-#         learning_rate=args.lr,  # learning_rate
-#         per_device_train_batch_size=args.batch_size,  # batch size per device during training
-#         per_device_eval_batch_size=8,  # batch size for evaluation
-#         warmup_steps=args.warmup_steps,  # number of warmup steps for learning rate scheduler
-#         weight_decay=args.weight_decay,  # strength of weight decay
-#         logging_dir=args.save_path + "logs",  # directory for storing logs
-#         logging_steps=args.logging_step,  # log saving step.
-#         eval_strategy=eval_strategy,  # eval strategy to adopt during training
-#         eval_steps=args.eval_step,  # evaluation step.
-#         load_best_model_at_end=load_best_model_at_end,
-#         metric_for_best_model="f1",  # The metric to use to compare two different models. ########
-#         greater_is_better=True,      # Whether a larger metric value is better. ######
-#         report_to="wandb",  # W&B 로깅 활성화
-#         run_name=args.run_name,  # run_name 지정
-#     )
-#     # ## Add callback & optimizer & scheduler
-#     # MyCallback = EarlyStoppingCallback(
-#     #     early_stopping_patience=3, early_stopping_threshold=0.001
-#     # )
-
-#     optimizer = torch.optim.AdamW(
-#         model.parameters(),
-#         lr=args.lr,
-#         betas=(0.9, 0.999),
-#         eps=1e-08,
-#         weight_decay=args.weight_decay,
-#         amsgrad=False,
-#     )
-#     print("--- Set training arguments Done ---")
-
-#     trainer = Trainer(
-#         model=model,  # the instantiated 🤗 Transformers model to be trained
-#         args=training_args,  # training arguments, defined above
-#         train_dataset=hate_train_dataset,  # training dataset
-#         eval_dataset=hate_valid_dataset,  # evaluation dataset
-#         compute_metrics=compute_metrics,  # define metrics function
-#         callbacks=callbacks,  # 수정: [MyCallback] -> callbacks
-#         #callbacks=[MyCallback],
-#         optimizers=(
-#             optimizer,
-#             get_cosine_with_hard_restarts_schedule_with_warmup(
-#                 optimizer,
-#                 num_warmup_steps=args.warmup_steps,
-#                 num_training_steps=len(hate_train_dataset) * args.epochs,
-#             ),
-#         ),
-#     )
-#     print("--- Set Trainer Done ---")
-
-#     return trainer
-
 def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
     """학습(train)을 위한 huggingface trainer 설정"""
-    
-     # 검증 데이터셋 유무에 따라 평가 전략 및 콜백을 동적으로 결정
-    callbacks = []
-    
-    if hate_valid_dataset is not None:
-        eval_strategy = "steps"
-        save_strategy = "steps"  # 추가: save_strategy 명시적 설정
-        load_best_model_at_end = True
-        callbacks.append(EarlyStoppingCallback(early_stopping_patience=3, early_stopping_threshold=0.001))
-    else:
-        eval_strategy = "no"
-        save_strategy = "steps"  # 추가: save_strategy 명시적 설정
-        load_best_model_at_end = False
-    
     training_args = TrainingArguments(
         output_dir=args.save_path + "/results",  # output directory
         save_total_limit=args.save_limit,  # number of total save model.
         save_steps=args.save_step,  # model saving step.
-        save_strategy=save_strategy,  # 추가: save_strategy 설정 ###################
         num_train_epochs=args.epochs,  # total number of training epochs
         learning_rate=args.lr,  # learning_rate
         per_device_train_batch_size=args.batch_size,  # batch size per device during training
@@ -210,18 +75,22 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
         weight_decay=args.weight_decay,  # strength of weight decay
         logging_dir=args.save_path + "logs",  # directory for storing logs
         logging_steps=args.logging_step,  # log saving step.
-        eval_strategy=eval_strategy,  # eval strategy to adopt during training
+        eval_strategy="steps",  # eval strategy to adopt during training
+        # `no`: No evaluation during training.
+        # `steps`: Evaluate every `eval_steps`.
+        # `epoch`: Evaluate every end of epoch.
         eval_steps=args.eval_step,  # evaluation step.
-        load_best_model_at_end=load_best_model_at_end,
-        metric_for_best_model="f1",  # The metric to use to compare two different models. ########
-        greater_is_better=True,      # Whether a larger metric value is better. ######
+        load_best_model_at_end=True,
         report_to="wandb",  # W&B 로깅 활성화
         run_name=args.run_name,  # run_name 지정
+        metric_for_best_model='f1',      # 최적 모델을 선택할 평가지표를 'f1'으로 설정  0923 추가
+        greater_is_better=True,  # metric_for_best_model의 값이 클수록 좋다고 설정 0923 추가
     )
-    # ## Add callback & optimizer & scheduler
-    # MyCallback = EarlyStoppingCallback(
-    #     early_stopping_patience=3, early_stopping_threshold=0.001
-    # )
+
+    ## Add callback & optimizer & scheduler
+    MyCallback = EarlyStoppingCallback(
+        early_stopping_patience=2, early_stopping_threshold=0.001
+    )
 
     optimizer = torch.optim.AdamW(
         model.parameters(),
@@ -239,8 +108,7 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
         train_dataset=hate_train_dataset,  # training dataset
         eval_dataset=hate_valid_dataset,  # evaluation dataset
         compute_metrics=compute_metrics,  # define metrics function
-        callbacks=callbacks,  # 수정: [MyCallback] -> callbacks
-        #callbacks=[MyCallback],
+        callbacks=[MyCallback],
         optimizers=(
             optimizer,
             get_cosine_with_hard_restarts_schedule_with_warmup(
@@ -277,14 +145,14 @@ def train(args):
     
     # HuggingFace 사용으로 prepare_dataset의 args.dataset_dir -> args.dataset_name
     hate_train_dataset, hate_valid_dataset, hate_test_dataset, test_dataset = (
-        prepare_dataset(args.dataset_name, tokenizer, args.max_len, args.model_name, args.dataset_revision)
+        prepare_dataset(args.dataset_name, tokenizer, args.max_len, args.model_name)
     )
 
     # set trainer
     trainer = load_trainer_for_train(
         args, model, hate_train_dataset, hate_valid_dataset
     )
-  
+
     # train model
     print("--- Start train ---")
     trainer.train()

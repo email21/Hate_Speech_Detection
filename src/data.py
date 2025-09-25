@@ -28,13 +28,13 @@ class hate_dataset(torch.utils.data.Dataset):
 #     print(dataset.head())
 #     return dataset
 
-def load_data(dataset_name, split, revision):
+def load_data(dataset_name, split):
     """HuggingFace에서 데이터셋 로드 → pandas DataFrame 반환"""
     from datasets import load_dataset
     
     try:
         # HF Dataset 로드
-        hf_dataset = load_dataset(dataset_name, split=split, revision=revision)
+        hf_dataset = load_dataset(dataset_name, split=split)
         
         # pandas DataFrame으로 변환
         dataset = hf_dataset.to_pandas()
@@ -72,7 +72,7 @@ def construct_tokenized_dataset(dataset, tokenizer, max_length, model_name):
     return tokenized_senetences
 
 
-def prepare_dataset(dataset_name, tokenizer, max_len, model_name, revision):
+def prepare_dataset(dataset_name, tokenizer, max_len, model_name):
     """학습(train)과 평가(test)를 위한 데이터셋을 준비"""
     # load_data
     # train_dataset = load_data(os.path.join(dataset_dir, "train.csv")) 
@@ -81,11 +81,11 @@ def prepare_dataset(dataset_name, tokenizer, max_len, model_name, revision):
     # print("--- data loading Done ---")
     
     # HuggingFace에서 데이터 로드
-    train_dataset = load_data(dataset_name, "train", revision)
-    valid_dataset = load_data(dataset_name, "validation", revision) 
-    test_dataset = load_data(dataset_name, "test", revision)
+    train_dataset = load_data(dataset_name, "train")
+    valid_dataset = load_data(dataset_name, "validation") 
+    test_dataset = load_data(dataset_name, "test")
     print("--- data loading Done ---")
-  
+
     # split label
     train_label = train_dataset["output"].values
     valid_label = valid_dataset["output"].values
@@ -104,3 +104,42 @@ def prepare_dataset(dataset_name, tokenizer, max_len, model_name, revision):
     print("--- pytorch dataset class Done ---")
 
     return hate_train_dataset, hate_valid_dataset, hate_test_dataset, test_dataset
+
+def prepare_dataset_for_cpt(dataset_name, tokenizer, max_length):
+    """추가 사전 훈련(CPT)을 위한 데이터셋 준비"""
+    #from datasets import load_dataset
+    
+    print(f"CPT용 데이터 로드: {dataset_name}")
+    
+    # 훈련 데이터만 사용하여 모든 텍스트를 하나의 코퍼스로 만듭니다.
+    # unlabeled 데이터가 있다면 함께 사용하는 것이 좋습니다.
+    dataset = load_dataset(dataset_name, split="train")
+    
+    # 텍스트가 없는 라인 필터링
+    #dataset = dataset.filter(lambda x: x['input'] is not None and len(x['input']) > 0)
+    
+    def tokenize_function(examples):
+        return tokenizer(examples["input"], return_special_tokens_mask=True)
+
+    tokenized_dataset = dataset.map(
+        tokenize_function, batched=True, num_proc=4, remove_columns=dataset.column_names
+    )
+
+    block_size = tokenizer.model_max_length
+    if block_size > 1024:
+        block_size = 1024
+        
+    def group_texts(examples):
+        concatenated_examples = {k: sum(examples[k], []) for k in examples.keys()}
+        total_length = len(concatenated_examples[list(examples.keys())[0]])
+        total_length = (total_length // block_size) * block_size
+        result = {
+            k: [t[i : i + block_size] for i in range(0, total_length, block_size)]
+            for k, t in concatenated_examples.items()
+        }
+        result["labels"] = result["input_ids"].copy()
+        return result
+
+    lm_dataset = tokenized_dataset.map(group_texts, batched=True, num_proc=4)
+    print("CPT용 데이터셋 준비 완료.")
+    return lm_dataset
