@@ -1,5 +1,3 @@
-# ensemble.py
-
 import torch
 import argparse
 import numpy as np
@@ -44,13 +42,17 @@ def run_ensemble(args):
             continue  # 경로가 비어있으면 건너뛰기
         print(f"\n--- Processing model from: {model_path} ---")
 
+        # [핵심 수정] 1. 체크포인트의 config.json을 먼저 로드
         config = AutoConfig.from_pretrained(model_path)
+        # 2. config에서 원본 모델 이름 (_name_or_path)을 가져옴
         original_model_name = config._name_or_path
 
+        # 3. 원본 모델 이름으로 Hub에서 정확한 토크나이저를 로드
         tokenizer = AutoTokenizer.from_pretrained(
             original_model_name, revision=args.model_revision
         )
 
+        # 학습 때와 동일하게 특수 토큰 추가
         new_tokens = [
             "&name&",
             "&location&",
@@ -77,6 +79,7 @@ def run_ensemble(args):
         )
         test_dataloader = hate_dataset(tokenized_test, [0] * len(test_df))
 
+        # 체크포인트 경로에서 학습된 모델 가중치를 로드
         model = AutoModelForSequenceClassification.from_pretrained(model_path).to(
             device
         )
@@ -114,7 +117,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    if len(args.model_paths) < 1:  # 유효한 경로가 하나라도 있어야 실행
+    if len(args.model_paths) < 1:
         raise ValueError(
             "앙상블을 위해서는 최소 1개 이상의 유효한 모델 경로가 필요합니다."
         )
