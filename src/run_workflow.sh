@@ -1,6 +1,6 @@
 #!/bin/bash
 # TAPT부터 앙상블까지 전 과정을 자동화하는 SOTA 워크플로우 스크립트
-# 각 학습 단계의 성공 여부를 자동으로 검증하고, 실패 시 원인을 명확히 안내하도록 안정성 강화
+# [v5] GPU 자원 교착 상태 해결을 위해 모든 학습을 순차 실행하고, 각 단계의 성공 여부를 자동으로 검증하도록 안정성 강화
 
 # 스크립트 실행 중 오류 발생 시 즉시 중단
 set -e
@@ -33,6 +33,7 @@ run_tapt() {
     echo "--- TAPT 시작: $base_model on $dataset (rev: $revision) ---"
     python tapt.py --base_model_name "$base_model" --dataset_name "$dataset" --dataset_revision "$revision" --epochs "$epochs" --output_model_path "$save_path" > "$log_file" 2>&1
 
+    # TAPT 결과물(모델 파일)이 정상적으로 생성되었는지 검증
     if [ ! -f "$save_path/pytorch_model.bin" ] && [ ! -f "$save_path/model.safetensors" ]; then
         echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
         echo "오류: TAPT 실패! '$save_path'에 모델 파일이 생성되지 않았습니다."
@@ -55,6 +56,7 @@ run_finetune() {
     echo "--- Fine-tuning 시작: $model_name ---"
     python main.py --model_name "$model_name" --run_name "$run_name" --lr "$lr" --save_path "$save_path" > "$log_file" 2>&1
     
+    # Fine-tuning 결과물(체크포인트 폴더)이 정상적으로 생성되었는지 검증
     if [ ! -d "$save_path/results" ]; then
         echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
         echo "오류: Fine-tuning 실패! '$save_path/results' 디렉토리가 생성되지 않았습니다."
@@ -82,13 +84,14 @@ echo "--- 모든 TAPT 프로세스 완료 ---"
 # ======================================================
 echo "PHASE 2: Fine-tuning 시작"
 
+# 기본 모델 5종 학습
 run_finetune "klue/bert-base" "ft_klue-bert-base" "3e-5" "klue-bert-base"
 run_finetune "beomi/kcbert-base" "ft_beomi-kcbert-base" "5e-5" "beomi-kcbert-base"
 run_finetune "beomi/KcELECTRA-base-v2022" "ft_KcELECTRA" "5e-5" "KcELECTRA"
 run_finetune "monologg/koelectra-small-v3-discriminator" "ft_koelectra-small" "5e-5" "koelectra-small"
 run_finetune "monologg/koelectra-base-v3-discriminator" "ft_koelectra-base" "5e-5" "koelectra-base"
 
-# TAPT된 모델 학습
+# TAPT된 모델 4종 학습
 run_finetune "$TAPT_MODEL_DIR/bert_on_nikl" "ft_tapt-bert-nikl" "3e-5" "tapt-bert-nikl"
 run_finetune "$TAPT_MODEL_DIR/beomi-kcbert_on_nikl" "ft_tapt-beomi-kcbert-nikl" "5e-5" "tapt-beomi-kcbert-nikl"
 run_finetune "$TAPT_MODEL_DIR/bert_on_aeda" "ft_tapt-bert-aeda" "3e-5" "tapt-bert-aeda"
@@ -140,3 +143,4 @@ echo "- prediction_ensemble_baseline_5models.csv"
 echo "- prediction_ensemble_tapt_nikl.csv"
 echo "- prediction_ensemble_tapt_aeda.csv"
 echo "======================================================"
+
