@@ -1,5 +1,6 @@
 #!/bin/bash
 # TAPT부터 앙상블까지 전 과정을 자동화하는 SOTA 워크플로우 스크립트
+# main.py의 인자(--save_dir)와 일치하도록 쉘 스크립트 수정
 # transformers 라이브러리 업데이트로 인한 모델 저장 파일 형식 변경(safetensors)에 대응
 # TAPT에서 AEDA 데이터셋 제외, FT에서 koelectra-small 모델 제외
 # GPU 자원 교착 상태 해결을 위해 모든 학습을 순차 실행하고, 각 단계의 성공 여부를 자동으로 검증하도록 안정성 강화
@@ -33,7 +34,7 @@ run_tapt() {
     echo "--- TAPT 시작: $base_model on $dataset (rev: $revision) ---"
     python tapt.py --base_model_name "$base_model" --dataset_name "$dataset" --dataset_revision "$revision" --epochs "$epochs" --output_model_path "$save_path" > "$log_file" 2>&1
     
-    # [수정] TAPT 결과 검증: pytorch_model.bin 또는 model.safetensors 파일이 있는지 확인
+    # TAPT 결과 검증: pytorch_model.bin 또는 model.safetensors 파일이 있는지 확인
     if [ -d "$save_path" ] && { [ -f "$save_path/pytorch_model.bin" ] || [ -f "$save_path/model.safetensors" ]; }; then
         echo "--- TAPT 성공: $save_dir_name ---"
     else
@@ -50,7 +51,8 @@ run_ft() {
     local log_file="$LOG_DIR/ft_$save_dir_name.log"
 
     echo "--- Fine-tuning 시작: $base_model ---"
-    python main.py --model_name "$base_model" --dataset_name "$NIKL_DATASET" --dataset_revision "$NIKL_REVISION" --output_dir "$save_path" --run_name "$save_dir_name" > "$log_file" 2>&1
+    # [수정] --output_dir -> --save_dir 로 변경하여 main.py와 인자 통일
+    python main.py --model_name "$base_model" --dataset_name "$NIKL_DATASET" --dataset_revision "$NIKL_REVISION" --save_dir "$save_path" --run_name "$save_dir_name" > "$log_file" 2>&1
     
     # FT 결과 검증
     if [ -d "$save_path" ] && [ -n "$(find "$save_path" -type d -name "checkpoint-*" | head -n 1)" ]; then
@@ -94,27 +96,8 @@ echo "Phase 2: Fine-tuning 완료"
 # ===================================================================================
 echo "Phase 3: Ensemble 시작"
 
-# 앙상블할 모델 경로 탐색 (오류 수정을 위해 `/results` 제거)
+# 앙상블할 모델 경로 탐색
 FT_BERT_PATH=$(find "$FT_MODEL_DIR/ft-bert-base" -type d -name "checkpoint-*" | head -n 1)
 FT_BEOMI_KCBERT_PATH=$(find "$FT_MODEL_DIR/ft-beomi-kcbert-base" -type d -name "checkpoint-*" | head -n 1)
 FT_KOELECTRA_BASE_PATH=$(find "$FT_MODEL_DIR/ft-koelectra-base" -type d -name "checkpoint-*" | head -n 1)
-FT_ELECTRA_PATH=$(find "$FT_MODEL_DIR/ft-electra-base" -type d -name "checkpoint-*" | head -n 1)
-TAPT_BERT_NIKL_FT_PATH=$(find "$FT_MODEL_DIR/tapt-bert-nikl-ft" -type d -name "checkpoint-*" | head -n 1)
-TAPT_BEOMI_KCBERT_NIKL_FT_PATH=$(find "$FT_MODEL_DIR/tapt-beomi-kcbert-nikl-ft" -type d -name "checkpoint-*" | head -n 1)
-
-# 전략 1: 기본 모델 4종 앙상블
-echo "-> 전략 1: 기본 모델 4종 앙상블"
-python ensemble.py \
-    --dataset_name $NIKL_DATASET --dataset_revision $NIKL_REVISION \
-    --output_filename "prediction_ensemble_baseline_4models.csv" \
-    --model_paths "$FT_BERT_PATH" "$FT_BEOMI_KCBERT_PATH" "$FT_ELECTRA_PATH" "$FT_KOELECTRA_BASE_PATH"
-
-# 전략 2: TAPT (NIKL) 적용 모델 앙상블
-echo "-> 전략 2: TAPT(NIKL) 적용 모델 앙상블"
-python ensemble.py \
-    --dataset_name $NIKL_DATASET --dataset_revision $NIKL_REVISION \
-    --output_filename "prediction_ensemble_tapt_nikl.csv" \
-    --model_paths "$TAPT_BERT_NIKL_FT_PATH" "$TAPT_BEOMI_KCBERT_NIKL_FT_PATH" "$FT_KOELECTRA_BASE_PATH" "$FT_ELECTRA_PATH"
-
-echo "Phase 3: Ensemble 완료"
-echo "--- 모든 워크플로우가 성공적으로 완료되었습니다. ---"
+FT_ELECTRA_PATH=$(find "$FT_MODEL_DIR/ft-electra-base" -type d -name "checkpoint-
