@@ -83,7 +83,7 @@ echo "Phase 2: Fine-tuning 시작"
 run_ft "klue/bert-base" "ft-bert-base"
 run_ft "beomi/kcbert-base" "ft-beomi-kcbert-base"
 run_ft "monologg/koelectra-base-v3-discriminator" "ft-koelectra-base"
-run_ft "google/electra-base-discriminator" "ft-electra-base"
+run_ft "beomi/KcELECTRA-base" "ft-electra-base"
 
 # TAPT 적용 모델 Fine-tuning
 run_ft "$TAPT_MODEL_DIR/tapt-bert-nikl" "tapt-bert-nikl-ft"

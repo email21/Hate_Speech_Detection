@@ -44,7 +44,6 @@ def run_ensemble(args):
             continue
         print(f"\n--- Processing model from: {model_path} ---")
 
-        # --- [핵심 수정 로직 시작] ---
         # 1. 체크포인트 폴더의 config.json을 먼저 로드합니다.
         config = AutoConfig.from_pretrained(model_path)
         # 2. config에서 원본 모델 이름 (_name_or_path)을 가져옵니다.
@@ -56,7 +55,6 @@ def run_ensemble(args):
         tokenizer = AutoTokenizer.from_pretrained(
             original_model_name, revision=args.model_revision
         )
-        # --- [핵심 수정 로직 종료] ---
 
         # 학습 때와 동일하게 특수 토큰 추가
         new_tokens = [

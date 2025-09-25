@@ -165,7 +165,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--batch_size", type=int, default=16, help="Training batch size per device"
     )
-
+    parser.add_argument(
+        "--run_name",
+        type=str,
+        default=None,
+        help="A name for the W&B run. Defaults to output_model_path if not set.",
+    )
     args = parser.parse_args()
 
     if args.epochs <= 0:
