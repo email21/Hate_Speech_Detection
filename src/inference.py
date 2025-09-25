@@ -1,5 +1,5 @@
-from torch.utils.data import DataLoader
-import pandas as pd
+from torch.utils.data import DataLoader    # /home/sophie4jh/Hate_Speech_Detection/src/inference.py
+import pandas as pd         #               /home/sophie4jh/Hate_Speech_Detection/src/AEDA-roberta-large-kf5-model
 import torch
 import os
 import argparse
@@ -44,7 +44,7 @@ def infer_and_eval(args):
     # test_dataset = load_data(args.dataset_name, split="test")
     # HuggingFace 사용으로 prepare_dataset의 args.dataset_dir -> args.dataset_name
     _,_, hate_test_dataset, test_dataset = (
-        prepare_dataset(args.dataset_name, tokenizer, args.max_len, args.model_name)
+        prepare_dataset(args.dataset_name, tokenizer, args.max_len, args.model_name, args.dataset_revision)
     )
 
     # predict answer
@@ -91,3 +91,4 @@ if __name__ == "__main__":
 #     model_dir = "./best_model"
 
 #     infer_and_eval(model_name,model_dir)
+# python inference.py --model_dir .././model/results/checkpoint-800 --dataset_revision "v1.2"   --dataset_revision "v1.2"

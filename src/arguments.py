@@ -11,6 +11,9 @@ def add_common_args(parser):
         help="Hugging Face 데이터셋 이름 "
     )
     parser.add_argument(
+        "--dataset_revision", type=str, default="main", help="데이터셋 버전"
+    )
+    parser.add_argument(
         "--dataset_dir",
         type=str,
         default=".././NIKL_AU_2023_COMPETITION_v1.0",
@@ -80,7 +83,8 @@ def add_train_args(parser):
         "--save_limit", 
         type=int, 
         default=5, 
-        help="저장할 모델의 최대 개수"
+        #help="저장할 모델의 최대 개수"
+        help="저장할 모델 체크포인트의 최대 개수 (Trainer 인자)"
     )
     parser.add_argument(
         "--seed", 
