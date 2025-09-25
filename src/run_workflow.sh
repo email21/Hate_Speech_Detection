@@ -107,7 +107,7 @@ echo "PHASE 3: Ensemble Inference 시작"
 # 앙상블에 사용할 모델 경로 목록 자동 탐색
 FT_BERT_PATH=$(find "$FT_MODEL_DIR/ft-bert-base" -type d -name "checkpoint-*" | head -n 1)
 FT_BEOMI_KCBERT_PATH=$(find "$FFT_MODEL_DIR/ft-beomi-kcbert-base" -type d -name "checkpoint-*" | head -n 1)
-FT_ELECTRA_PATH=$(find "$FT_MODEL_DIR/KcELECTRA/results" -type d -name "checkpoint-*" | head -n 1)
+FT_ELECTRA_PATH=$(find "$FT_MODEL_DIR/KcELECTRA" -type d -name "checkpoint-*" | head -n 1)
 FT_KOELECTRA_SMALL_PATH=$(find "$FT_MODEL_DIR/koelectra-small" -type d -name "checkpoint-*" | head -n 1)
 FT_KOELECTRA_BASE_PATH=$(find "$FT_MODEL_DIR/koelectra-base" -type d -name "checkpoint-*" | head -n 1)
 TAPT_BERT_NIKL_FT_PATH=$(find "$FT_MODEL_DIR/tapt-bert-nikl" -type d -name "checkpoint-*" | head -n 1)
