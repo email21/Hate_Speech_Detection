@@ -199,17 +199,21 @@ def load_trainer_for_train(args, model, hate_train_dataset, hate_valid_dataset):
     return trainer
 
 
-def train(args):
-    """모델을 학습(train)하고 best model을 저장"""
+def train(args, hate_train_dataset=None, hate_valid_dataset=None):
+    """
+    모델을 학습(train)하고 best model을 저장합니다.
+    - hate_train_dataset, hate_valid_dataset 인자가 주어지면 K-fold 모드로 동작
+    - 인자가 없으면 기존 방식대로 데이터를 직접 불러와 단일 학습 모드로 동작
+    """
     # fix a seed
     pl.seed_everything(seed=42, workers=False)
 
     # set device
-    # device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("device:", device)
 
     # set model and tokenizer
+    # K-fold 시 매번 모델을 초기화하기 위해 항상 새로 불러옵니다.
     tokenizer, model = load_tokenizer_and_model_for_train(args)
     model.to(device)
 
@@ -228,6 +232,7 @@ def train(args):
             args.model_name,
             revision=args.dataset_revision,
         )
+
     # set trainer
     trainer = load_trainer_for_train(
         args, model, hate_train_dataset, hate_valid_dataset
