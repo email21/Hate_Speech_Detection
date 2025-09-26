@@ -221,16 +221,13 @@ def train(args):
     # 데이터셋이 인자로 주어지지 않은 경우(일반 학습)에만 직접 로드
     if hate_train_dataset is None or hate_valid_dataset is None:
         print("--- Loading data for single run ---")
-    # HuggingFace 사용으로 prepare_dataset의 args.dataset_dir -> args.dataset_name
-    hate_train_dataset, hate_valid_dataset, hate_test_dataset, test_dataset = (
-        prepare_dataset(
+        hate_train_dataset, hate_valid_dataset, _, _ = prepare_dataset(
             args.dataset_name,
             tokenizer,
             args.max_len,
             args.model_name,
             revision=args.dataset_revision,
-        )  # revision 추가
-    )
+        )
 
     # set trainer
     trainer = load_trainer_for_train(
@@ -247,7 +244,6 @@ def train(args):
     # K-fold를 위해 최종 점수 반환 로직 추가 (필요 시)
     best_checkpoint = trainer.state.best_model_checkpoint
     if best_checkpoint:
-        # 로그에서 best_score를 찾습니다. 'eval_f1'은 예시이며, 실제 로그 이름에 맞게 수정 필요
         for log in reversed(trainer.state.log_history):
             if "eval_f1" in log:
                 best_score = log.get("eval_f1", 0)
