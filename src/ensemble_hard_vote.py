@@ -1,4 +1,4 @@
-# ensemble_hard_vote.py
+# ensemble_hard_vote.py (수정 완료)
 
 import argparse
 import os
@@ -10,7 +10,6 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from scipy.stats import mode
 from tqdm import tqdm
 
-# 기존 프로젝트의 데이터셋 클래스를 그대로 사용합니다.
 from data import load_data, construct_tokenized_dataset, hate_dataset
 
 
@@ -42,15 +41,16 @@ def run_hard_voting_ensemble(args):
     print(f"Using device: {device}")
 
     # 1. 테스트 데이터셋 로드 및 준비
+    print(f"--- Loading tokenizer from specified path: {args.tokenizer_path} ---")
+    # [수정] 명확한 경로에서 토크나이저를 불러옵니다.
+    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_path)
+
     print("--- Loading and preparing test dataset ---")
     test_df = load_data(args.dataset_name, "test", args.dataset_revision)
-    # 임시 토크나이저 (데이터셋 준비용, 어떤 모델의 것이든 상관없음)
-    temp_tokenizer = AutoTokenizer.from_pretrained(args.model_paths[0])
 
     tokenized_test = construct_tokenized_dataset(
-        test_df, temp_tokenizer, args.max_len, args.model_paths[0]
+        test_df, tokenizer, args.max_len, "ensemble"
     )
-    # 라벨이 없는 테스트 데이터이므로 임시 라벨(0)을 넣어줍니다.
     dummy_labels = [0] * len(test_df)
     test_dataset = hate_dataset(tokenized_test, dummy_labels)
     test_dataloader = DataLoader(
@@ -83,10 +83,7 @@ def run_hard_voting_ensemble(args):
 
     # 3. 하드 보팅(Hard Voting) 수행
     print("\n--- Performing Hard Voting ---")
-    # (모델 수, 데이터 수) 형태의 2D 배열로 변환
     predictions_array = np.array(all_model_predictions)
-
-    # 각 데이터 샘플(column)에 대해 최빈값을 찾아 최종 예측값으로 결정 (axis=0)
     final_predictions, _ = mode(predictions_array, axis=0, keepdims=False)
 
     # 4. 최종 결과 파일 저장
@@ -109,6 +106,13 @@ if __name__ == "__main__":
         "--dataset_name", type=str, default="ensemble-2/NIKL_AU_2023_COMPETITION_v1.0"
     )
     parser.add_argument("--dataset_revision", type=str, default="v1.2")
+    # [수정] 토크나이저 경로를 위한 인자 추가
+    parser.add_argument(
+        "--tokenizer_path",
+        type=str,
+        required=True,
+        help="Path to a directory containing a valid tokenizer.",
+    )
     parser.add_argument(
         "--model_paths",
         nargs="+",
