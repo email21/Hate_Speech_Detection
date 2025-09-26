@@ -108,8 +108,8 @@ def prepare_kfold_dataset(dataset_name, revision):
     """K-Fold를 위해 전체 train 데이터와 test 데이터를 불러오는 함수"""
     # HuggingFace에서 전체 학습 데이터 로드
     # K-Fold는 학습 데이터를 나누는 것이므로, validation은 따로 불러오지 않습니다.
-    full_train_dataset = load_data(dataset_name, "train", revision=args.revision)
-    test_dataset = load_data(dataset_name, "test", revision=args.revision)
+    full_train_dataset = load_data(dataset_name, "train", revision=revision)
+    test_dataset = load_data(dataset_name, "test", revision=revision)
 
     if full_train_dataset is None or test_dataset is None:
         raise ValueError("K-Fold용 데이터셋 로딩에 실패했습니다.")

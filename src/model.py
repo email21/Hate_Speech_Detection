@@ -5,6 +5,8 @@ from data import prepare_dataset, prepare_kfold_dataset, construct_tokenized_dat
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
 import os
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from transformers import (
     AutoTokenizer,
@@ -282,3 +284,22 @@ def train(args):
         # 5. 최종 모델 저장
         model.save_pretrained(args.model_dir)
         tokenizer.save_pretrained(args.model_dir)
+        
+def inference_for_ensemble(model, tokenized_sent, device):
+    """
+    앙상블을 위해 로짓(logits)을 반환하는 추론 함수
+    """
+    dataloader = DataLoader(tokenized_sent, batch_size=8, shuffle=False)
+    model.eval()
+    output_logits = []
+    for i, data in enumerate(tqdm(dataloader)):
+        with torch.no_grad():
+            outputs = model(
+                input_ids=data["input_ids"].to(device),
+                attention_mask=data["attention_mask"].to(device),
+            )
+        logits = outputs[0]
+        logits = logits.detach().cpu().numpy()
+        output_logits.append(logits)
+    
+    return np.concatenate(output_logits)

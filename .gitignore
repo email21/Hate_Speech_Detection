@@ -168,6 +168,7 @@ cython_debug/
 NIKL_AU_2023_COMPETITION_v1.0/
 best_model/
 model/
-prediction/
+output.jsonl
+result.csv
 wandb/
 pretrained/
