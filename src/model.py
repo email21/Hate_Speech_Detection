@@ -228,7 +228,6 @@ def train(args):
             args.model_name,
             revision=args.dataset_revision,
         )
-
     # set trainer
     trainer = load_trainer_for_train(
         args, model, hate_train_dataset, hate_valid_dataset
