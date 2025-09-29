@@ -35,7 +35,7 @@ def add_common_args(parser):
     parser.add_argument(
         "--model_revision",
         type=str,
-        default="main",  # 기본값은 'main' 브랜치
+        default=None,  # "main" -> None
         help="Hugging Face 모델의 버전(브랜치, 태그, 커밋 해시 등)",
     )
     parser.add_argument(
